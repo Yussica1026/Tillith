@@ -2,18 +2,25 @@ name: Build Tillith Android Python wheels
 
 on:
   workflow_dispatch:
+    inputs:
+      package:
+        description: Packages to build (native adds Pillow and cryptography only)
+        type: choice
+        default: all
+        options: [all, rust, native, pillow, cryptography, pure]
 
 permissions:
   contents: read
 
 jobs:
   wheels:
+    if: inputs.package != 'pure'
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
-        package: [pydantic-core, jiter]
+        package: ${{ fromJSON(inputs.package == 'rust' && '["pydantic-core","jiter"]' || inputs.package == 'native' && '["pillow","cryptography"]' || inputs.package == 'pillow' && '["pillow"]' || inputs.package == 'cryptography' && '["cryptography"]' || '["pydantic-core","jiter","pillow","cryptography"]') }}
         abi: [arm64_v8a, x86_64]
     steps:
       - uses: actions/checkout@v4
@@ -49,5 +56,29 @@ jobs:
         with:
           name: tillith-cp313-android24-${{ matrix.package }}-${{ matrix.abi }}
           path: ${{ runner.temp }}/tillith-wheel-artifact/
+          if-no-files-found: error
+          retention-days: 14
+  pure-python:
+    if: inputs.package == 'all' || inputs.package == 'pure' || inputs.package == 'native'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build and verify platform-independent source packages
+        run: |
+          python -m pip install packaging==26.3
+          python mobile/native-python/build_wheels.py \
+            --package jieba --abi arm64_v8a \
+            --work-dir "$RUNNER_TEMP/tillith-pure-work" \
+            --output-dir "$RUNNER_TEMP/tillith-pure-artifact"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tillith-py3-none-any
+          path: ${{ runner.temp }}/tillith-pure-artifact/
           if-no-files-found: error
           retention-days: 14

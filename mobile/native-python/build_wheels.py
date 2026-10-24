@@ -1,4 +1,4 @@
-"""Build original upstream Rust extensions for Chaquopy 17.1 / CPython 3.13.
+"""Build original upstream extensions for Chaquopy 17.1 / CPython 3.13.
 
 Run on Linux with Java, Android SDK, Rust Android targets, and cibuildwheel
 4.3.4. --prepare-only verifies and extracts the small upstream source archive
@@ -13,6 +13,7 @@ import json
 import os
 import platform
 import re
+import shlex
 import shutil
 import struct
 import subprocess
@@ -33,6 +34,47 @@ PACKAGES = {
         "url": "https://files.pythonhosted.org/packages/63/5b/f68319f4fe624311a744a33d10fdbcac4c971991e348223cba60d31780b2/jiter-0.18.0.tar.gz",
         "sha256": "a0ca63fd9450a212e4e658d4cfe0ab4977c4f9b0003c68828b843c65e27662ff",
     },
+    "pillow": {
+        "version": "11.2.1",
+        "url": "https://files.pythonhosted.org/packages/af/cb/bb5c01fcd2a69335b86c22142b2bccfc3464087efb7fd382eee5ffc7fdf7/pillow-11.2.1.tar.gz",
+        "sha256": "a64dd61998416367b7ef979b73d3a85853ba9bec4c2925f74e588879a58716b6",
+    },
+    "cryptography": {
+        "version": "45.0.7",
+        "url": "https://files.pythonhosted.org/packages/a7/35/c495bffc2056f2dadb32434f1feedd79abde2a7f8363e1974afa9c33c7e2/cryptography-45.0.7.tar.gz",
+        "sha256": "4b1654dfc64ea479c242508eb8c724044f1e964a47d1d1cacc5132292d851971",
+    },
+    "jieba": {
+        "version": "0.42.1",
+        "url": "https://files.pythonhosted.org/packages/c6/cb/18eeb235f833b726522d7ebed54f2278ce28ba9438e3135ab0278d9792a2/jieba-0.42.1.tar.gz",
+        "sha256": "055ca12f62674fafed09427f176506079bc135638a14e23e25be909131928db2",
+    },
+}
+LIBRARIES = {
+    "jpeg": {
+        "version": "3.1.2",
+        "url": "https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.1.2/libjpeg-turbo-3.1.2.tar.gz",
+        "sha256": "8f0012234b464ce50890c490f18194f913a7b1f4e6a03d6644179fa0f867d0cf",
+    },
+    "freetype": {
+        "version": "2.13.3",
+        "url": "https://downloads.sourceforge.net/project/freetype/freetype2/2.13.3/freetype-2.13.3.tar.xz",
+        "sha256": "0550350666d427c74daeb85d5ac7bb353acba5f76956395995311a9c6f063289",
+    },
+    "webp": {
+        "version": "1.6.0",
+        "url": "https://storage.googleapis.com/downloads.webmproject.org/releases/webp/libwebp-1.6.0.tar.gz",
+        "sha256": "e4ab7009bf0629fd11982d4c2aa83964cf244cffba7347ecd39019a9e38c4564",
+    },
+    "openssl": {
+        "version": "3.5.9",
+        "url": "https://github.com/openssl/openssl/releases/download/openssl-3.5.9/openssl-3.5.9.tar.gz",
+        "sha256": "603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a",
+    },
+}
+PACKAGE_LIBRARIES = {
+    "pillow": ("jpeg", "freetype", "webp"),
+    "cryptography": ("openssl",),
 }
 SYSTEM_LIBRARIES = {
     "libandroid.so",
@@ -68,6 +110,14 @@ def audit_wheel(wheel: Path, package: str, abi: str, scratch: Path) -> dict:
     if canonicalize_name(name) != package or str(version) != expected["version"]:
         raise ValueError("Unexpected wheel distribution or version")
     for tag in tags:
+        if package == "jieba":
+            if (
+                tag.platform != "any"
+                or tag.abi != "none"
+                or tag.interpreter not in {"py2", "py3"}
+            ):
+                raise ValueError(f"Incompatible pure Python wheel tag: {tag}")
+            continue
         python_minor = (
             int(tag.interpreter.removeprefix("cp3"))
             if re.fullmatch(r"cp3\d+", tag.interpreter)
@@ -94,6 +144,23 @@ def audit_wheel(wheel: Path, package: str, abi: str, scratch: Path) -> dict:
         native = [
             name for name in archive.namelist() if re.search(r"\.so(?:\.|$)", name)
         ]
+        if package == "jieba":
+            if native or any(
+                name.endswith((".dll", ".pyd", ".dylib", ".a"))
+                for name in archive.namelist()
+            ):
+                raise ValueError("Pure Python wheel contains native code")
+            if (
+                "py3-none-any" not in header_tags
+                or "Root-Is-Purelib: true" not in archive.read(metadata[0]).decode()
+            ):
+                raise ValueError("Pure Python wheel must support Python 3 and purelib")
+            return {
+                "file": wheel.name,
+                "sha256": hashlib.sha256(wheel.read_bytes()).hexdigest(),
+                "tags": sorted(str(tag) for tag in tags),
+                "native_libraries": [],
+            }
         if not native:
             raise ValueError("Native package contains no ELF libraries")
         bundled = {Path(name).name for name in native}
@@ -151,6 +218,185 @@ def audit_wheel(wheel: Path, package: str, abi: str, scratch: Path) -> dict:
     }
 
 
+def download_source(recipe: dict, directory: Path) -> Path:
+    """Download and verify one pinned upstream source archive.
+
+    Args:
+        recipe: Official source URL and SHA256.
+        directory: New extraction directory.
+
+    Returns:
+        The single top-level upstream source directory.
+
+    Raises:
+        ValueError: The source checksum or layout is unexpected.
+    """
+    directory.mkdir(parents=True, exist_ok=False)
+    archive_path = directory / "upstream.tar"
+    with urllib.request.urlopen(recipe["url"], timeout=120) as response:
+        with archive_path.open("wb") as destination:
+            shutil.copyfileobj(response, destination)
+    if hashlib.sha256(archive_path.read_bytes()).hexdigest() != recipe["sha256"]:
+        raise ValueError("Upstream source SHA256 mismatch")
+    source_root = directory / "source"
+    source_root.mkdir()
+    with tarfile.open(archive_path) as archive:
+        archive.extractall(source_root, filter="data")
+    roots = list(source_root.iterdir())
+    if len(roots) != 1 or not roots[0].is_dir():
+        raise ValueError("Unexpected upstream source layout")
+    return roots[0]
+
+
+def build_libraries(package: str, abi: str, work: Path) -> None:
+    """Build static PIC dependencies using cibuildwheel's Android compiler.
+
+    Args:
+        package: Selected extension recipe.
+        abi: Target Android ABI.
+        work: Prepared source workspace.
+
+    Raises:
+        RuntimeError: The compiler is not an Android NDK compiler.
+    """
+    compiler = Path(shutil.which(shlex.split(os.environ["CC"])[0]) or "").resolve()
+    ndk = next(
+        (
+            parent
+            for parent in compiler.parents
+            if (parent / "build/cmake/android.toolchain.cmake").is_file()
+        ),
+        None,
+    )
+    if ndk is None:
+        raise RuntimeError("An Android NDK compiler is required")
+    prefix = work / "native-prefix"
+    prefix.mkdir(exist_ok=True)
+    env = os.environ.copy()
+    env["PATH"] = f"{compiler.parent}{os.pathsep}{env['PATH']}"
+    env["ANDROID_NDK_ROOT"] = str(ndk)
+    for name in PACKAGE_LIBRARIES[package]:
+        source = next((work / name / "source").iterdir())
+        if name == "openssl":
+            # OpenSSL selects the Android target itself; do not inherit host CC.
+            openssl_env = env | {"CC": "clang", "CXX": "clang++"}
+            subprocess.run(
+                [
+                    "perl",
+                    "Configure",
+                    {"arm64_v8a": "android-arm64", "x86_64": "android-x86_64"}[abi],
+                    "-D__ANDROID_API__=24",
+                    "-fPIC",
+                    "no-shared",
+                    "no-tests",
+                    "no-apps",
+                    f"--prefix={prefix}",
+                    "--libdir=lib",
+                ],
+                cwd=source,
+                env=openssl_env,
+                check=True,
+            )
+            subprocess.run(
+                ["make", "-j2", "build_libs"], cwd=source, env=openssl_env, check=True
+            )
+            subprocess.run(
+                ["make", "install_dev"], cwd=source, env=openssl_env, check=True
+            )
+            continue
+        options = {
+            "jpeg": [
+                "-DENABLE_SHARED=OFF",
+                "-DENABLE_STATIC=ON",
+                "-DWITH_SIMD=OFF",
+                "-DWITH_TURBOJPEG=OFF",
+            ],
+            "freetype": [
+                f"-DFT_DISABLE_{feature}=ON"
+                for feature in ("ZLIB", "BZIP2", "PNG", "HARFBUZZ", "BROTLI")
+            ],
+            "webp": [
+                f"-DWEBP_BUILD_{feature}=OFF"
+                for feature in (
+                    "ANIM_UTILS",
+                    "CWEBP",
+                    "DWEBP",
+                    "VWEBP",
+                    "GIF2WEBP",
+                    "IMG2WEBP",
+                    "WEBPINFO",
+                    "WEBPMUX",
+                    "EXTRAS",
+                )
+            ],
+        }[name]
+        build = work / f"build-{name}"
+        subprocess.run(
+            [
+                "cmake",
+                "-S",
+                str(source),
+                "-B",
+                str(build),
+                f"-DCMAKE_TOOLCHAIN_FILE={ndk}/build/cmake/android.toolchain.cmake",
+                f"-DANDROID_ABI={abi.replace('_v8a', '-v8a')}",
+                "-DANDROID_PLATFORM=android-24",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DBUILD_SHARED_LIBS=OFF",
+                "-DBUILD_TESTING=OFF",
+                "-DCMAKE_POSITION_INDEPENDENT_CODE=ON",
+                f"-DCMAKE_INSTALL_PREFIX={prefix}",
+                "-DCMAKE_INSTALL_LIBDIR=lib",
+                *options,
+            ],
+            env=env,
+            check=True,
+        )
+        subprocess.run(
+            ["cmake", "--build", str(build), "--parallel", "2"], env=env, check=True
+        )
+        subprocess.run(["cmake", "--install", str(build)], env=env, check=True)
+        if name == "webp":
+            # Pillow links -lwebp without pkg-config's static dependencies.
+            # Merge the real PIC archives; no upstream source is altered.
+            combined = prefix / "lib/libwebp-combined.a"
+            libraries = [
+                prefix / "lib" / filename
+                for filename in ("libwebp.a", "libsharpyuv.a", "libcpufeatures-webp.a")
+            ]
+            for library in libraries:
+                if not library.is_file():
+                    raise RuntimeError(
+                        f"Missing compiled WebP dependency: {library.name}"
+                    )
+            script = (
+                f"CREATE {combined}\n"
+                + "".join(f"ADDLIB {library}\n" for library in libraries)
+                + "SAVE\nEND\n"
+            )
+            subprocess.run(
+                [str(compiler.parent / "llvm-ar"), "-M"],
+                input=script,
+                text=True,
+                check=True,
+            )
+            combined.replace(prefix / "lib/libwebp.a")
+    if package == "pillow":
+        # Link Android's system zlib stub, never a Linux host library.
+        sysroot = compiler.parent.parent / "sysroot/usr"
+        triplet = {
+            "arm64_v8a": "aarch64-linux-android",
+            "x86_64": "x86_64-linux-android",
+        }[abi]
+        for filename in ("zlib.h", "zconf.h"):
+            shutil.copyfile(
+                sysroot / "include" / filename, prefix / "include" / filename
+            )
+        shutil.copyfile(
+            sysroot / "lib" / triplet / "24/libz.so", prefix / "lib/libz.so"
+        )
+
+
 def main() -> None:
     """Download a pinned source, compile for Android, and audit the output."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -159,29 +405,28 @@ def main() -> None:
     parser.add_argument("--work-dir", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument(
+        "--build-dependencies", action="store_true", help=argparse.SUPPRESS
+    )
     args = parser.parse_args()
     recipe = PACKAGES[args.package]
     work = args.work_dir.resolve()
+    if args.build_dependencies:
+        build_libraries(args.package, args.abi, work)
+        return
     work.mkdir(parents=True, exist_ok=False)
-    archive_path = work / "source.tar.gz"
-    with urllib.request.urlopen(recipe["url"], timeout=60) as response:
-        with archive_path.open("wb") as destination:
-            shutil.copyfileobj(response, destination)
-    if hashlib.sha256(archive_path.read_bytes()).hexdigest() != recipe["sha256"]:
-        raise ValueError("Upstream source SHA256 mismatch")
-    source_root = work / "source"
-    source_root.mkdir()
-    with tarfile.open(archive_path) as archive:
-        archive.extractall(source_root, filter="data")
-    roots = list(source_root.iterdir())
-    if len(roots) != 1 or not (roots[0] / "pyproject.toml").is_file():
+    source = download_source(recipe, work / "package")
+    if not any((source / name).is_file() for name in ("pyproject.toml", "setup.py")):
         raise ValueError("Unexpected upstream source layout")
-    source = roots[0]
+    for library in PACKAGE_LIBRARIES.get(args.package, ()):
+        download_source(LIBRARIES[library], work / library)
     shutil.copyfile(
         Path(__file__).with_name("wheel_smoke.py"), source / "tillith_wheel_smoke.py"
     )
     constraints = work / "build-constraints.txt"
-    constraints.write_text("maturin==1.15.0\n", encoding="utf-8")
+    constraints.write_text(
+        "maturin==1.15.0\ncffi==1.17.1\nsetuptools==80.9.0\n", encoding="utf-8"
+    )
     configuration = work / "cibuildwheel.toml"
     configuration.write_text(
         '[tool.cibuildwheel]\nbuild = "cp313-android_*"\n'
@@ -191,6 +436,28 @@ def main() -> None:
         'test-requires = ["typing-extensions==4.15.0"]\n',
         encoding="utf-8",
     )
+    if args.package in PACKAGE_LIBRARIES:
+        before = shlex.join(
+            [
+                "python",
+                str(Path(__file__).resolve()),
+                "--build-dependencies",
+                "--package",
+                args.package,
+                "--abi",
+                args.abi,
+                "--work-dir",
+                str(work),
+                "--output-dir",
+                str(args.output_dir.resolve()),
+            ]
+        )
+        with configuration.open("a", encoding="utf-8") as stream:
+            stream.write(f"before-build = {json.dumps(before)}\n")
+            if args.package == "pillow":
+                stream.write(
+                    '[tool.cibuildwheel.config-settings]\nplatform-guessing = "disable"\njpeg = "enable"\nzlib = "enable"\nfreetype = "enable"\nwebp = "enable"\n'
+                )
     manifest = {
         "package": args.package,
         "version": recipe["version"],
@@ -202,7 +469,19 @@ def main() -> None:
         "chaquopy": "17.1.0",
         "cibuildwheel": "4.3.4",
         "maturin": "1.15.0",
+        "libraries": {
+            name: LIBRARIES[name] for name in PACKAGE_LIBRARIES.get(args.package, ())
+        },
     }
+    if args.package == "pillow":
+        manifest["image_features"] = ["jpeg", "png_system_zlib", "webp", "freetype"]
+        manifest["optional_image_features_not_built"] = [
+            "raqm",
+            "libtiff",
+            "lcms",
+            "jpeg2000",
+            "compressed_font_formats",
+        ]
     (work / "source-manifest.json").write_text(
         json.dumps(manifest, indent=2), encoding="utf-8"
     )
@@ -210,6 +489,57 @@ def main() -> None:
         print(
             f"Verified upstream source and prepared build: {args.package} {recipe['version']}"
         )
+        return
+    output = args.output_dir.resolve()
+    output.mkdir(parents=True, exist_ok=True)
+    raw_wheels = work / "unverified-wheels"
+    if args.package == "jieba":
+        # --no-deps builds this one pure package; App installation still resolves
+        # all dependencies normally. Never ship a host-native wheel from here.
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "pip",
+                "wheel",
+                "--no-deps",
+                "--wheel-dir",
+                str(raw_wheels),
+                str(source),
+            ],
+            check=True,
+            env=os.environ
+            | {
+                "PIP_CONSTRAINT": str(constraints),
+                "PIP_BUILD_CONSTRAINT": str(constraints),
+            },
+        )
+        wheels = list(raw_wheels.glob("*.whl"))
+        if len(wheels) != 1:
+            raise ValueError("Expected exactly one pure Python wheel")
+        manifest["wheels"] = [audit_wheel(wheels[0], args.package, args.abi, work)]
+        manifest["android_emulator_test"] = (
+            "not_required_pure_python_host_tokenization_test"
+        )
+        # Exercise the actual built archive on the host without installing it.
+        test_root = work / "pure-smoke"
+        with zipfile.ZipFile(wheels[0]) as archive:
+            archive.extractall(test_root)
+        subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "import jieba; assert list(jieba.cut('Tillith')) == ['Tillith']",
+            ],
+            env=os.environ | {"PYTHONPATH": str(test_root)},
+            cwd=work,
+            check=True,
+        )
+        shutil.copyfile(wheels[0], output / wheels[0].name)
+        (output / "manifest.json").write_text(
+            json.dumps(manifest, indent=2), encoding="utf-8"
+        )
+        print(f"Verified pure Python wheel written to {output}")
         return
     if sys.platform != "linux" or platform.machine() not in {"x86_64", "AMD64"}:
         raise RuntimeError(
@@ -220,17 +550,40 @@ def main() -> None:
     if importlib.metadata.version("cibuildwheel") != "4.3.4":
         raise RuntimeError("Expected pinned cibuildwheel 4.3.4")
     env = os.environ.copy()
+    prefix = work / "native-prefix"
+    environment = {
+        "PIP_CONSTRAINT": str(constraints),
+        "PIP_BUILD_CONSTRAINT": str(constraints),
+        "RUSTFLAGS": "-C link-arg=-Wl,-z,max-page-size=16384",
+    }
+    if args.package in PACKAGE_LIBRARIES:
+        environment.update(
+            {
+                "PIP_EXTRA_INDEX_URL": "https://chaquo.com/pypi-13.1",
+                "PIP_ONLY_BINARY": "cffi",
+                "OPENSSL_DIR": str(prefix),
+                "OPENSSL_STATIC": "1",
+                "OPENSSL_NO_VENDOR": "1",
+                "PKG_CONFIG_LIBDIR": str(prefix / "lib/pkgconfig"),
+                "JPEG_ROOT": str(prefix),
+                "FREETYPE_ROOT": str(prefix),
+                "WEBP_ROOT": str(prefix),
+                "ZLIB_ROOT": str(prefix),
+                "LIBRARY_PATH": str(prefix / "lib"),
+                "CPATH": str(prefix / "include")
+                + ":"
+                + str(prefix / "include/freetype2"),
+            }
+        )
     env.update(
         {
             "ANDROID_API_LEVEL": "24",
             "CIBW_TEST_SKIP": "",
-            "CIBW_ENVIRONMENT_ANDROID": f'PIP_CONSTRAINT="{constraints}" PIP_BUILD_CONSTRAINT="{constraints}" '
-            'RUSTFLAGS="-C link-arg=-Wl,-z,max-page-size=16384"',
+            "CIBW_ENVIRONMENT_ANDROID": " ".join(
+                f"{key}={shlex.quote(value)}" for key, value in environment.items()
+            ),
         }
     )
-    output = args.output_dir.resolve()
-    output.mkdir(parents=True, exist_ok=True)
-    raw_wheels = work / "unverified-wheels"
     subprocess.run(
         [
             sys.executable,

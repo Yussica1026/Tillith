@@ -73,7 +73,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ inputs.extra_wheel_run_id }}
-          pattern: tillith-cp313-android24-*
+          pattern: tillith-*
           merge-multiple: true
           path: mobile/native-python/wheels
       - name: Build Android package

@@ -3,3 +3,9 @@
 pydantic==2.12.5
 pydantic-core==2.41.5
 jiter==0.18.0
+Pillow==11.2.1
+# 45.x supports the existing Chaquopy CPython 3.13 cffi wheel (1.17.1).
+# 46.x requires cffi >= 2, for which that index has no CPython 3.13 Android wheel.
+cryptography==45.0.7
+cffi==1.17.1
+jieba==0.42.1

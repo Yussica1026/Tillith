@@ -58,6 +58,29 @@ class WheelRejectionTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "tags disagree"):
                 BUILDER.audit_wheel(wheel, "jiter", "x86_64", root)
 
+    def test_pure_wheel_rejects_native_payload_and_host_tags(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for tag, filename, expected in (
+                (
+                    "py3-none-linux_x86_64",
+                    "jieba/__init__.py",
+                    "Incompatible pure Python",
+                ),
+                ("py3-none-any", "jieba/native.so", "contains native code"),
+                ("py3-none-any", "jieba/native.pyd", "contains native code"),
+            ):
+                with self.subTest(tag=tag, filename=filename):
+                    wheel = root / f"jieba-0.42.1-{tag}.whl"
+                    with zipfile.ZipFile(wheel, "w") as archive:
+                        archive.writestr(
+                            "jieba-0.42.1.dist-info/WHEEL",
+                            f"Root-Is-Purelib: true\nTag: {tag}\n",
+                        )
+                        archive.writestr(filename, b"malformed test fixture")
+                    with self.assertRaisesRegex(ValueError, expected):
+                        BUILDER.audit_wheel(wheel, "jieba", "arm64_v8a", root)
+
 
 if __name__ == "__main__":
     unittest.main()
