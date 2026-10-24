@@ -713,6 +713,15 @@ export type T2iTemplateRequest = {
     [key: string]: unknown | string;
 };
 
+export type TillithProfile = {
+    app: "Tillith";
+    /**
+     * Existing authenticated owner; API keys use api_key followed by a colon and their key ID.
+     */
+    username: string;
+    core_version: string;
+};
+
 export type ToolPermissionPatch = {
     permission: 'admin' | 'member';
 };
@@ -753,6 +762,12 @@ export type UpdateRequest = {
     reboot?: boolean;
     progress_id?: string;
 };
+
+export type GetTillithProfileResponse = ((SuccessEnvelope & {
+    data?: TillithProfile;
+}));
+
+export type GetTillithProfileError = (ErrorEnvelope);
 
 export type LoginData = {
     body: LoginRequest;

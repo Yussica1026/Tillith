@@ -64,6 +64,7 @@ security:
   - ApiKeyAuth: []
 
 tags:
+  - name: Tillith
   - name: Open API
   - name: Auth
   - name: API Keys
@@ -97,6 +98,30 @@ tags:
   - name: Webhooks
 
 paths:
+  /api/v1/tillith/profile:
+    get:
+      tags: [Tillith]
+      summary: Get the authenticated Tillith client identity
+      description: Return the existing chat owner identity without creating a conversation.
+      operationId: getTillithProfile
+      x-astrbot-scope: chat
+      responses:
+        "200":
+          description: Authenticated identity and local core version
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/TillithProfile"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+
   /api/v1/auth/login:
     post:
       tags: [Auth]
@@ -5571,6 +5596,19 @@ components:
         type: string
 
   schemas:
+    TillithProfile:
+      type: object
+      required: [app, username, core_version]
+      properties:
+        app:
+          type: string
+          const: Tillith
+        username:
+          type: string
+          description: Existing authenticated owner; API keys use api_key followed by a colon and their key ID.
+        core_version:
+          type: string
+
     RuntimeInfo:
       type: object
       description: The AstrBot backend runtime, including when running inside a container. Values are captured at application startup.

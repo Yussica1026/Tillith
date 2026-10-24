@@ -1,3 +1,13 @@
+# Tillith
+
+Tillith is a private derivative of AstrBot, developed directly from the Python core in this repository. Its responsive client lives in `mobile/` and uses React, TypeScript, Vite, and Capacitor. It supports a server connection mode and an Android embedded-core integration under development.
+
+The local application at `http://127.0.0.1:6195` has been verified with real sessions, the built-in `/help` command, attachments, and persisted history. The embedded Python entry point has been exercised against the real desktop core; Android native dependencies and a working APK remain unverified. External LLM providers have not been tested.
+
+Read the Tillith usage guide in [简体中文](docs/zh/use/tillith-mobile.md) or [English](docs/en/use/tillith-mobile.md). The upstream README follows below. Upstream attribution and the [AGPL-3.0 license](LICENSE) are retained.
+
+---
+
 ![AstrBot-Logo-Simplified](https://github.com/user-attachments/assets/36fb04e4-cc75-4454-bd8b-049d11aa86f9)
 
 

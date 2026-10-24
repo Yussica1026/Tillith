@@ -80,6 +80,9 @@
   ],
   "tags": [
     {
+      "name": "Tillith"
+    },
+    {
       "name": "Open API"
     },
     {
@@ -141,6 +144,47 @@
     }
   ],
   "paths": {
+    "/api/v1/tillith/profile": {
+      "get": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Get the authenticated Tillith client identity",
+        "description": "Return the existing chat owner identity without creating a conversation.\n\n**Required scope:** `chat`",
+        "operationId": "getTillithProfile",
+        "x-astrbot-scope": "chat",
+        "responses": {
+          "200": {
+            "description": "Authenticated identity and local core version",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TillithProfile"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/system-config/schema": {
       "get": {
         "tags": [
@@ -6893,6 +6937,16 @@
           }
         }
       },
+      "Error": {
+        "description": "Standard AstrBot error response",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorEnvelope"
+            }
+          }
+        }
+      },
       "Text": {
         "description": "Text response",
         "content": {
@@ -7079,6 +7133,27 @@
       }
     },
     "schemas": {
+      "TillithProfile": {
+        "type": "object",
+        "required": [
+          "app",
+          "username",
+          "core_version"
+        ],
+        "properties": {
+          "app": {
+            "type": "string",
+            "const": "Tillith"
+          },
+          "username": {
+            "type": "string",
+            "description": "Existing authenticated owner; API keys use api_key followed by a colon and their key ID."
+          },
+          "core_version": {
+            "type": "string"
+          }
+        }
+      },
       "SuccessEnvelope": {
         "type": "object",
         "required": [
@@ -7089,6 +7164,24 @@
           "status": {
             "type": "string",
             "const": "ok"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {}
+        },
+        "additionalProperties": false
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "required": [
+          "status",
+          "message"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "error"
           },
           "message": {
             "type": "string"

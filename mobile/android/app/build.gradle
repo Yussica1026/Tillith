@@ -1,0 +1,85 @@
+apply plugin: 'com.android.application'
+
+if (providers.gradleProperty('embeddedCore').getOrElse('false') == 'true') {
+    apply plugin: 'com.chaquo.python'
+    def repositoryRoot = rootProject.projectDir.parentFile.parentFile
+    def stagedPython = layout.buildDirectory.dir('tillith-python')
+    def stagePython = tasks.register('stageTillithPython', Sync) {
+        into stagedPython
+        from(new File(repositoryRoot, 'astrbot')) {
+            into 'astrbot'
+            exclude '**/__pycache__/**', 'dashboard/dist/**'
+        }
+        from(new File(repositoryRoot, 'runtime_bootstrap.py'))
+        from(new File(repositoryRoot, 'mobile/native-python/bootstrap.py'))
+    }
+    android.defaultConfig.ndk.abiFilters.addAll(['arm64-v8a', 'x86_64'])
+    chaquopy {
+        defaultConfig {
+            version = '3.13'
+            extractPackages('astrbot')
+            pip {
+                install('-r', new File(repositoryRoot, 'mobile/native-python/requirements.txt').absolutePath)
+            }
+        }
+        sourceSets.getByName('main').srcDir(stagedPython)
+    }
+    tasks.configureEach {
+        if (name.toLowerCase().contains('python') && name != 'stageTillithPython') {
+            dependsOn(stagePython)
+        }
+    }
+}
+
+android {
+    namespace = "app.tillith.privatechat"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "app.tillith.privatechat"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "0.1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}
