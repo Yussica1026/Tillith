@@ -7,6 +7,10 @@ on:
         description: 'Also attempt the full on-device Python core (native wheel compatibility required)'
         type: boolean
         default: true
+      smoke:
+        description: 'Run the cloud APK in an Android emulator'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -34,6 +38,9 @@ jobs:
         with:
           python-version: '3.13'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+          log-accepted-android-sdk-licenses: false
       - name: Install and compile mobile interface
         working-directory: mobile
         run: npm ci && npm run android:sync
@@ -46,6 +53,32 @@ jobs:
           if [ "$BUILD_MODE" = embedded ] && [ "$BUILD_EMBEDDED" != true ]; then exit 0; fi
           chmod +x gradlew
           ./gradlew --no-daemon assembleDebug -PembeddedCore=$([ "$BUILD_MODE" = embedded ] && echo true || echo false)
+      - name: Enable emulator acceleration
+        if: matrix.mode == 'cloud' && inputs.smoke
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Verify the installed cloud application
+        if: matrix.mode == 'cloud' && inputs.smoke
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          working-directory: mobile/android
+          script: ./gradlew --no-daemon connectedDebugAndroidTest -PembeddedCore=false
+      - name: Save emulator test results
+        if: always() && matrix.mode == 'cloud' && inputs.smoke
+        uses: actions/upload-artifact@v4
+        with:
+          name: tillith-android-smoke
+          path: |
+            mobile/android/app/build/reports/androidTests/
+            mobile/android/app/build/outputs/androidTest-results/
+          if-no-files-found: ignore
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: success() && (matrix.mode == 'cloud' || inputs.embedded)
         with:
