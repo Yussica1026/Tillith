@@ -1,7 +1,10 @@
+import asyncio
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import pytest
 
+from astrbot.dashboard.services import open_api_service
 from astrbot.dashboard.services.open_api_service import (
     OpenApiService,
     OpenApiServiceError,
@@ -185,3 +188,84 @@ async def test_prepare_chat_send_allows_admin_username_with_subscope(monkeypatch
     assert username == "admin-user"
     assert session_id == "admin-session"
     assert config_id is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("include_reply", [False, True])
+async def test_ws_control_frames_do_not_create_empty_bot_history(
+    monkeypatch, include_reply
+):
+    """Persist response content while keeping run-control frames out of history."""
+    service = _service()
+    bridge = _bridge()
+    back_queue = asyncio.Queue()
+    chat_queue = asyncio.Queue()
+    sent, saved, removed = [], [], []
+    frames = [{"type": "run_started", "streaming": False}]
+    if include_reply:
+        frames.extend(
+            [
+                {
+                    "type": "plain",
+                    "streaming": True,
+                    "chain_type": "reasoning",
+                    "data": "test reasoning",
+                },
+                {"type": "plain", "streaming": True, "data": "test response"},
+            ]
+        )
+    frames.extend([{"type": "complete", "streaming": True}, {"type": "end"}])
+    for frame in frames:
+        back_queue.put_nowait(frame)
+
+    async def prepare_chat_send(*_args, **_kwargs):
+        return "test-user", "test-session", None
+
+    async def update_route(**_kwargs):
+        return None
+
+    async def build_parts(_message):
+        return [{"type": "plain", "text": "test prompt"}]
+
+    async def save_bot_message(_session, parts, _stats, _refs):
+        saved.append(parts)
+        return SimpleNamespace(id=1, created_at=datetime.now(timezone.utc))
+
+    async def send_json(payload):
+        sent.append(payload)
+
+    async def send_error(*_args):
+        pytest.fail("Valid stream unexpectedly failed")
+
+    bridge.build_user_message_parts = build_parts
+    bridge.save_bot_message = save_bot_message
+    monkeypatch.setattr(service, "prepare_chat_send", prepare_chat_send)
+    monkeypatch.setattr(service, "update_session_config_route", update_route)
+    monkeypatch.setattr(
+        open_api_service,
+        "webchat_queue_mgr",
+        SimpleNamespace(
+            get_or_create_back_queue=lambda *_args: back_queue,
+            get_or_create_queue=lambda *_args: chat_queue,
+            remove_back_queue=removed.append,
+        ),
+    )
+    await service.handle_chat_ws_send(
+        post_data={"message": "test prompt", "message_id": "test-run"},
+        conf_list=[],
+        chat_bridge=bridge,
+        send_json=send_json,
+        send_error=send_error,
+    )
+    assert saved == (
+        [
+            [
+                {"type": "think", "think": "test reasoning"},
+                {"type": "plain", "text": "test response"},
+            ]
+        ]
+        if include_reply
+        else []
+    )
+    assert sum(frame["type"] == "message_saved" for frame in sent) == int(include_reply)
+    assert removed == ["test-run"]

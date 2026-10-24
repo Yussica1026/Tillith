@@ -131,7 +131,7 @@ export async function loadMessages(id: string): Promise<Message[]> {
     return {
       id: String(row.id), role: row.sender_id === 'bot' || row.sender_name === 'bot' || row.type === 'bot' ? 'assistant' : 'user',
       text: parts.filter((p: any) => p.type === 'plain').map((p: any) => p.text || '').join(''),
-      reasoning: parts.filter((p: any) => p.type === 'reasoning').map((p: any) => p.text || '').join(''),
+      reasoning: parts.filter((p: any) => p.type === 'think' || p.type === 'reasoning').map((p: any) => p.type === 'think' ? p.think || '' : p.text || '').join('') || (typeof content.reasoning === 'string' ? content.reasoning : ''),
       attachments: parts.filter((p: any) => p.attachment_id && ['image', 'record', 'file', 'video'].includes(p.type)).map((p: any) => ({ id: p.attachment_id, type: p.type, name: p.filename || p.name || '附件' })),
       status: 'done',
     };

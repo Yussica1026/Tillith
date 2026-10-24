@@ -510,7 +510,9 @@ class OpenApiService:
                     if chain_type not in ("tool_call", "tool_call_result"):
                         should_save = True
 
-                if should_save:
+                if should_save and (
+                    message_accumulator.has_content() or refs or agent_stats
+                ):
                     message_parts_to_save = message_accumulator.build_message_parts(
                         include_pending_tool_calls=True
                     )
