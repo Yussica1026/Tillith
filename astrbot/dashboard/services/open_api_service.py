@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
@@ -34,6 +35,8 @@ from astrbot.dashboard.services.chat_service import (
 SendJson = Callable[[dict], Awaitable[None]]
 ReceiveJson = Callable[[], Awaitable[Any]]
 CloseWebSocket = Callable[[int, str], Awaitable[None]]
+
+WS_KEEPALIVE_INTERVAL_SECONDS = 20
 
 
 class OpenApiServiceError(Exception):
@@ -455,10 +458,14 @@ class OpenApiService:
             message_accumulator = BotMessageAccumulator()
             agent_stats = {}
             refs = {}
+            last_sent = time.monotonic()
             while True:
                 try:
                     result = await asyncio.wait_for(back_queue.get(), timeout=1)
                 except asyncio.TimeoutError:
+                    if time.monotonic() - last_sent >= WS_KEEPALIVE_INTERVAL_SECONDS:
+                        await send_json({"type": "keepalive"})
+                        last_sent = time.monotonic()
                     continue
 
                 if not result:
@@ -480,12 +487,14 @@ class OpenApiService:
                             "data": json.loads(result_text),
                         }
                         await send_json(stats_info)
+                        last_sent = time.monotonic()
                         agent_stats = stats_info["data"]
                     except Exception:
                         pass
                     continue
 
                 await send_json(result)
+                last_sent = time.monotonic()
 
                 if msg_type == "plain":
                     message_accumulator.add_plain(

@@ -192,13 +192,26 @@ async def test_prepare_chat_send_allows_admin_username_with_subscope(monkeypatch
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("include_reply", [False, True])
+@pytest.mark.parametrize("idle", [False, True])
 async def test_ws_control_frames_do_not_create_empty_bot_history(
-    monkeypatch, include_reply
+    monkeypatch, include_reply, idle
 ):
     """Persist response content while keeping run-control frames out of history."""
     service = _service()
+    if idle:
+        monkeypatch.setattr(open_api_service, "WS_KEEPALIVE_INTERVAL_SECONDS", 0)
     bridge = _bridge()
-    back_queue = asyncio.Queue()
+
+    class IdleQueue(asyncio.Queue):
+        timed_out = False
+
+        async def get(self):
+            if idle and not self.timed_out:
+                self.timed_out = True
+                raise asyncio.TimeoutError
+            return await super().get()
+
+    back_queue = IdleQueue()
     chat_queue = asyncio.Queue()
     sent, saved, removed = [], [], []
     frames = [{"type": "run_started", "streaming": False}]
@@ -269,3 +282,6 @@ async def test_ws_control_frames_do_not_create_empty_bot_history(
     )
     assert sum(frame["type"] == "message_saved" for frame in sent) == int(include_reply)
     assert removed == ["test-run"]
+    assert sum(frame["type"] == "keepalive" for frame in sent) == int(idle)
+    if idle:
+        assert sent[1] == {"type": "keepalive"}
