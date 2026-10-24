@@ -5,9 +5,6 @@ from typing import TYPE_CHECKING
 
 from astrbot.core import logger
 from astrbot.core.agent.runners.coze.coze_agent_runner import CozeAgentRunner
-from astrbot.core.agent.runners.dashscope.dashscope_agent_runner import (
-    DashscopeAgentRunner,
-)
 from astrbot.core.agent.runners.deerflow.constants import DEERFLOW_PROVIDER_TYPE
 from astrbot.core.agent.runners.deerflow.deerflow_agent_runner import (
     DeerFlowAgentRunner,
@@ -338,6 +335,10 @@ class ThirdPartyAgentSubStage(Stage):
         elif self.runner_type == "coze":
             runner = CozeAgentRunner[AstrAgentContext]()
         elif self.runner_type == "dashscope":
+            from astrbot.core.agent.runners.dashscope.dashscope_agent_runner import (
+                DashscopeAgentRunner,
+            )
+
             runner = DashscopeAgentRunner[AstrAgentContext]()
         elif self.runner_type == DEERFLOW_PROVIDER_TYPE:
             runner = DeerFlowAgentRunner[AstrAgentContext]()

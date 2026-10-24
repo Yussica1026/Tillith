@@ -16,14 +16,6 @@ from astrbot.core.platform.sources.lark.app_registration import (
     request_app_registration,
 )
 from astrbot.core.platform.sources.lark.bot_info import request_lark_bot_info
-from astrbot.core.platform.sources.qqofficial.login_registration import (
-    poll_qqofficial_login_once,
-    request_qqofficial_login_qr,
-)
-from astrbot.core.platform.sources.weixin_oc.login_registration import (
-    poll_weixin_oc_login_once,
-    request_weixin_oc_login_qr,
-)
 
 
 class PlatformServiceError(Exception):
@@ -204,6 +196,10 @@ class PlatformService:
         platform_config: dict,
     ) -> dict:
         if action == "start":
+            from astrbot.core.platform.sources.qqofficial.login_registration import (
+                request_qqofficial_login_qr,
+            )
+
             registration = await request_qqofficial_login_qr(platform_config)
             return {
                 "status": "pending",
@@ -224,6 +220,10 @@ class PlatformService:
                 raise PlatformServiceError("Missing task_id", 400)
             if not bind_key:
                 raise PlatformServiceError("Missing bind_key", 400)
+            from astrbot.core.platform.sources.qqofficial.login_registration import (
+                poll_qqofficial_login_once,
+            )
+
             return await poll_qqofficial_login_once(
                 platform_config=platform_config,
                 task_id=task_id,
@@ -239,6 +239,10 @@ class PlatformService:
         platform_config: dict,
     ) -> dict:
         if action == "start":
+            from astrbot.core.platform.sources.weixin_oc.login_registration import (
+                request_weixin_oc_login_qr,
+            )
+
             registration = await request_weixin_oc_login_qr(platform_config)
             return {
                 "status": "pending",
@@ -254,6 +258,10 @@ class PlatformService:
             ).strip()
             if not qrcode:
                 raise PlatformServiceError("Missing qrcode", 400)
+            from astrbot.core.platform.sources.weixin_oc.login_registration import (
+                poll_weixin_oc_login_once,
+            )
+
             result = await poll_weixin_oc_login_once(
                 platform_config=platform_config,
                 qrcode=qrcode,

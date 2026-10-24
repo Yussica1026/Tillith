@@ -45,4 +45,6 @@ After connecting, create a session, send a message or attachment, return to the 
 
 ## Android build status
 
+The base mobile core uses `mobile/native-python/mobile-requirements.txt` for chat, personas, SQLite, built-in plugins, APIs, and attachments. The complete upstream server requirements remain in `requirements.txt`. External messaging platforms, Docker, FAISS indexing, and additional document converters require their own dependencies; installing a plugin does not establish Android compatibility. A fresh environment with this profile has passed real startup, message and attachment roundtrips, and database persistence after shutdown.
+
 The Capacitor shell and the embedded entry point in `mobile/native-python` remain under integration. Several Python dependencies require native binaries for the target Android ABI, followed by emulator or device verification. There is no verified working APK yet. A successful embedded-core startup on desktop does not establish that it runs on a phone.

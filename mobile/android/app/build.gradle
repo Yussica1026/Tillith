@@ -19,7 +19,12 @@ if (providers.gradleProperty('embeddedCore').getOrElse('false') == 'true') {
             version = '3.13'
             extractPackages('astrbot')
             pip {
-                install('-r', new File(repositoryRoot, 'mobile/native-python/requirements.txt').absolutePath)
+                install('-r', new File(repositoryRoot, 'mobile/native-python/mobile-requirements.txt').absolutePath)
+                options('-c', new File(repositoryRoot, 'mobile/native-python/wheel-constraints.txt').absolutePath)
+                def wheelDirectory = new File(repositoryRoot, 'mobile/native-python/wheels')
+                if (wheelDirectory.isDirectory()) {
+                    options('--find-links', wheelDirectory.absolutePath)
+                }
             }
         }
         sourceSets.getByName('main').srcDir(stagedPython)

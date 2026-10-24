@@ -17,10 +17,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, BinaryIO, cast
 
-if sys.version_info < (3, 14):
-    import python_ripgrep
-    from python_ripgrep import search
-
 from astrbot.api import logger
 from astrbot.core.computer.file_read_utils import (
     detect_text_encoding,
@@ -40,6 +36,16 @@ from astrbot.core.utils.astrbot_path import (
 from ..olayer import FileSystemComponent, PythonComponent, ShellComponent
 from .base import ComputerBooter
 from .shipyard_search_file_util import _truncate_long_lines
+
+python_ripgrep = None
+search = None
+if sys.version_info < (3, 14):
+    try:
+        import python_ripgrep
+        from python_ripgrep import search
+    except ModuleNotFoundError as exc:
+        if exc.name != "python_ripgrep":
+            raise
 
 _BLOCKED_COMMAND_PATTERNS = [
     " rm -rf ",
@@ -1122,7 +1128,7 @@ class LocalFileSystemComponent(FileSystemComponent):
         sandbox_root: str | None = None,
     ) -> dict[str, Any]:
         def _run() -> dict[str, Any]:
-            if not sandboxed and sys.version_info < (3, 14):
+            if not sandboxed and sys.version_info < (3, 14) and search is not None:
                 results = search(
                     patterns=[pattern],
                     paths=[path] if path else None,
@@ -1136,7 +1142,7 @@ class LocalFileSystemComponent(FileSystemComponent):
                     "content": _truncate_long_lines("".join(results)),
                 }
 
-            if sandboxed and sys.version_info < (3, 14):
+            if sandboxed and sys.version_info < (3, 14) and python_ripgrep is not None:
                 site_packages = str(
                     Path(python_ripgrep.__file__).resolve().parent.parent
                 )
@@ -1163,6 +1169,9 @@ class LocalFileSystemComponent(FileSystemComponent):
                             "The ripgrep (rg) executable is required for file search "
                             "on Python 3.14 or later because python-ripgrep 0.0.8 is "
                             "incompatible."
+                            if sys.version_info >= (3, 14)
+                            else "File search requires python-ripgrep or the ripgrep "
+                            "(rg) executable on this device."
                         ),
                     }
 

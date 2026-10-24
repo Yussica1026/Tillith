@@ -3,6 +3,11 @@ name: Build Tillith Android
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: 'Android package to build'
+        type: choice
+        options: [both, cloud, embedded]
+        default: both
       embedded:
         description: 'Also attempt the full on-device Python core (native wheel compatibility required)'
         type: boolean
@@ -11,9 +16,18 @@ on:
         description: 'Run the cloud APK in an Android emulator'
         type: boolean
         default: true
+      wheel_run_id:
+        description: 'Successful Tillith Android Python wheel build run ID'
+        type: string
+        default: ''
+      extra_wheel_run_id:
+        description: 'Optional second wheel run for image and crypto dependencies'
+        type: string
+        default: ''
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   android:
@@ -22,7 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [cloud, embedded]
+        mode: ${{ fromJSON(inputs.target == 'embedded' && '["embedded"]' || inputs.target == 'cloud' && '["cloud"]' || '["cloud", "embedded"]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -44,6 +58,24 @@ jobs:
       - name: Install and compile mobile interface
         working-directory: mobile
         run: npm ci && npm run android:sync
+      - name: Download verified Android Python wheels
+        if: matrix.mode == 'embedded' && inputs.embedded && inputs.wheel_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.wheel_run_id }}
+          pattern: tillith-cp313-android24-*
+          merge-multiple: true
+          path: mobile/native-python/wheels
+      - name: Download additional Android Python wheels
+        if: matrix.mode == 'embedded' && inputs.embedded && inputs.extra_wheel_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.extra_wheel_run_id }}
+          pattern: tillith-cp313-android24-*
+          merge-multiple: true
+          path: mobile/native-python/wheels
       - name: Build Android package
         working-directory: mobile/android
         env:
