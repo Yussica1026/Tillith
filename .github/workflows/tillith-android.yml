@@ -104,7 +104,7 @@ jobs:
           emulator-boot-timeout: 300
           disable-animations: true
           working-directory: mobile/android
-          script: ./gradlew --no-daemon connectedDebugAndroidTest -PembeddedCore=false
+          script: ./gradlew --no-daemon :app:connectedDebugAndroidTest -PembeddedCore=false
       - name: Save emulator test results
         if: always() && matrix.mode == 'cloud' && inputs.smoke
         uses: actions/upload-artifact@v4

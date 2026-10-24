@@ -8,6 +8,11 @@ on:
         type: choice
         default: all
         options: [all, rust, native, pillow, cryptography, pure]
+      abi:
+        description: Android ABI (select one to retry only that target)
+        type: choice
+        default: all
+        options: [all, arm64_v8a, x86_64]
 
 permissions:
   contents: read
@@ -21,7 +26,7 @@ jobs:
       fail-fast: false
       matrix:
         package: ${{ fromJSON(inputs.package == 'rust' && '["pydantic-core","jiter"]' || inputs.package == 'native' && '["pillow","cryptography"]' || inputs.package == 'pillow' && '["pillow"]' || inputs.package == 'cryptography' && '["cryptography"]' || '["pydantic-core","jiter","pillow","cryptography"]') }}
-        abi: [arm64_v8a, x86_64]
+        abi: ${{ fromJSON(inputs.abi == 'arm64_v8a' && '["arm64_v8a"]' || inputs.abi == 'x86_64' && '["x86_64"]' || '["arm64_v8a","x86_64"]') }}
     steps:
       - uses: actions/checkout@v4
         with:

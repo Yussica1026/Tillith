@@ -197,6 +197,18 @@ def audit_wheel(wheel: Path, package: str, abi: str, scratch: Path) -> dict:
                 text=True,
             ).stdout
             needed = re.findall(r"\(NEEDED\).*?\[(.*?)\]", dynamic)
+            symbols = subprocess.run(
+                ["readelf", "--dyn-syms", "--wide", str(extracted)],
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout
+            if re.search(r"\bUND\s+_?Py[A-Za-z0-9_]*", symbols) and not (
+                set(needed) & {"libpython3.13.so", "libpython3.so"}
+            ):
+                raise ValueError(
+                    f"Python extension does not explicitly link libpython: {name}"
+                )
             unknown = set(needed) - SYSTEM_LIBRARIES - bundled
             if unknown:
                 raise ValueError(
@@ -395,6 +407,13 @@ def build_libraries(package: str, abi: str, work: Path) -> None:
         shutil.copyfile(
             sysroot / "lib" / triplet / "24/libz.so", prefix / "lib/libz.so"
         )
+    elif package == "cryptography":
+        # PyO3 0.25 suppresses libpython linkage for extension-module builds,
+        # including Android. Expose the real target library to RUSTFLAGS.
+        python_library = Path(os.environ["PYO3_CROSS_LIB_DIR"]) / "libpython3.13.so"
+        if not python_library.is_file():
+            raise RuntimeError("Missing target Android libpython3.13.so")
+        (prefix / "lib/libpython3.13.so").symlink_to(python_library)
 
 
 def main() -> None:
@@ -575,6 +594,11 @@ def main() -> None:
                 + str(prefix / "include/freetype2"),
             }
         )
+    if args.package == "cryptography":
+        environment["RUSTFLAGS"] += (
+            f" -L native={prefix / 'lib'}"
+            " -C link-arg=-Wl,--no-as-needed -C link-arg=-lpython3.13"
+        )
     env.update(
         {
             "ANDROID_API_LEVEL": "24",
@@ -584,25 +608,45 @@ def main() -> None:
             ),
         }
     )
-    subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "cibuildwheel",
-            str(source),
-            "--platform",
-            "android",
-            "--archs",
-            args.abi,
-            "--config-file",
-            str(configuration),
-            "--output-dir",
-            str(raw_wheels),
-        ],
-        check=True,
+    command = [
+        sys.executable,
+        "-m",
+        "cibuildwheel",
+        str(source),
+        "--platform",
+        "android",
+        "--archs",
+        args.abi,
+        "--config-file",
+        str(configuration),
+        "--output-dir",
+        str(raw_wheels),
+    ]
+    smoke_marker = f"TILLITH_ANDROID_WHEEL_SMOKE_OK {args.package} {recipe['version']}"
+    smoke_passed = False
+    with subprocess.Popen(
+        command,
         env=env,
         cwd=source,
-    )
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    ) as process:
+        for line in process.stdout:
+            print(line, end="", flush=True)
+            if smoke_marker in line:
+                smoke_passed = True
+        return_code = process.wait()
+    if return_code:
+        raise subprocess.CalledProcessError(return_code, command)
+    # android.py can return zero after a transient ADB disconnect before it
+    # observes the app. Require positive evidence from our actual smoke code.
+    if args.abi == "x86_64" and not smoke_passed:
+        raise RuntimeError(
+            "Android test returned without the required functional success marker; wheel was not promoted"
+        )
     wheels = list(raw_wheels.glob("*.whl"))
     if len(wheels) != 1:
         raise ValueError("Expected exactly one wheel for this package and ABI")
