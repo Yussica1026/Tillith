@@ -1,0 +1,5 @@
+# Pair the upstream-supported Pydantic baseline with its exact Rust core ABI.
+# Feed this file to the embedded Gradle pip resolver together with --find-links.
+pydantic==2.12.5
+pydantic-core==2.41.5
+jiter==0.18.0

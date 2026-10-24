@@ -1,0 +1,53 @@
+name: Build Tillith Android Python wheels
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wheels:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [pydantic-core, jiter]
+        abi: [arm64_v8a, x86_64]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools'
+          log-accepted-android-sdk-licenses: false
+      - name: Install fixed wheel builder and Rust targets
+        run: |
+          python -m pip install cibuildwheel==4.3.4
+          rustup toolchain install 1.89.0 --profile minimal
+          rustup default 1.89.0
+          rustup target add aarch64-linux-android x86_64-linux-android
+      - name: Build, test on Android where supported, and inspect ELF
+        env:
+          WHEEL_PACKAGE: ${{ matrix.package }}
+          WHEEL_ABI: ${{ matrix.abi }}
+        run: |
+          python mobile/native-python/build_wheels.py \
+            --package "$WHEEL_PACKAGE" --abi "$WHEEL_ABI" \
+            --work-dir "$RUNNER_TEMP/tillith-wheel-work" \
+            --output-dir "$RUNNER_TEMP/tillith-wheel-artifact"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tillith-cp313-android24-${{ matrix.package }}-${{ matrix.abi }}
+          path: ${{ runner.temp }}/tillith-wheel-artifact/
+          if-no-files-found: error
+          retention-days: 14
