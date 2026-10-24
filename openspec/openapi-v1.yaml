@@ -122,6 +122,43 @@ paths:
         "403":
           $ref: "#/components/responses/Error"
 
+  /api/v1/tillith/chat-options:
+    get:
+      tags: [Tillith]
+      summary: List locally available Tillith chat choices
+      description: Return configuration labels and loaded, enabled chat providers allowed by the selected configuration. No credentials, endpoints or prompts are returned, and no remote model discovery is performed. Use the IDs and model names with the existing chat WebSocket parameters.
+      operationId: getTillithChatOptions
+      x-astrbot-scope: chat
+      parameters:
+        - name: config_id
+          in: query
+          required: false
+          schema:
+            type: string
+            default: default
+      responses:
+        "200":
+          description: Local configuration and chat model choices; providers is empty when none are available
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/TillithChatOptions"
+        "401":
+          $ref: "#/components/responses/Error"
+        "403":
+          $ref: "#/components/responses/Error"
+        "404":
+          description: The requested configuration does not exist
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+
   /api/v1/auth/login:
     post:
       tags: [Auth]
@@ -5608,6 +5645,41 @@ components:
           description: Existing authenticated owner; API keys use api_key followed by a colon and their key ID.
         core_version:
           type: string
+
+    TillithChatOptions:
+      type: object
+      additionalProperties: false
+      required: [configs, providers, default_config_id]
+      properties:
+        configs:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, name]
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+        providers:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [id, name, model]
+            properties:
+              id:
+                type: string
+                description: Existing selected_provider value for chat WebSocket requests.
+              name:
+                type: string
+              model:
+                type: string
+                description: Existing selected_model value; read from the loaded provider without remote discovery.
+        default_config_id:
+          type: string
+          const: default
 
     RuntimeInfo:
       type: object

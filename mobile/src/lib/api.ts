@@ -7,6 +7,8 @@ export type Attachment = { id: string; name: string; type: 'image' | 'record' | 
 export type Message = { id: string; role: 'user' | 'assistant'; text: string; reasoning?: string; attachments?: Attachment[]; status?: 'sending' | 'streaming' | 'done' | 'error' };
 export type Connection = { mode: Mode; username: string; label: string };
 export type CoreStatus = { available: boolean; running: boolean; message: string };
+export type ChatSelection = { configId: string; providerId: string; model: string };
+export type ChatOptions = { configs: { id: string; name: string }[]; providers: { id: string; name: string; model: string }[]; default_config_id: string };
 export type StreamEvent = { type: 'text' | 'reasoning' | 'saved' | 'complete' | 'attachment' | 'error'; text?: string; attachment?: Attachment; messageId?: string };
 
 const Core = registerPlugin<{
@@ -120,6 +122,9 @@ export async function listSessions(): Promise<Session[]> {
 }
 
 export async function createSession(): Promise<Session> { return session(await request('/chat/sessions/new?platform_id=webchat')); }
+export async function listChatOptions(configId?: string): Promise<ChatOptions> {
+  return request('/tillith/chat-options' + (configId ? '?' + new URLSearchParams({ config_id: configId }) : ''));
+}
 export async function renameSession(id: string, title: string): Promise<void> { await request('/chat/sessions/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify({ display_name: title }) }); }
 export async function deleteSession(id: string): Promise<void> { await request('/chat/sessions/' + encodeURIComponent(id), { method: 'DELETE' }); }
 
@@ -162,7 +167,7 @@ export async function attachmentUrl(attachment: Attachment): Promise<string> {
   return URL.createObjectURL(await response.blob());
 }
 
-export async function sendMessage(id: string, text: string, attachments: Attachment[], onEvent: (event: StreamEvent) => void, signal?: AbortSignal): Promise<void> {
+export async function sendMessage(id: string, text: string, attachments: Attachment[], onEvent: (event: StreamEvent) => void, signal?: AbortSignal, selection?: ChatSelection): Promise<void> {
   const { base, key, username } = requireConnection();
   if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
   const url = new URL(base + '/api/v1/chat/ws');
@@ -185,6 +190,8 @@ export async function sendMessage(id: string, text: string, attachments: Attachm
     };
     signal?.addEventListener('abort', cancel, { once: true });
     ws.onopen = () => ws.send(JSON.stringify({ t: 'send', username, session_id: id, message_id: crypto.randomUUID(),
+      ...(selection?.configId ? { config_id: selection.configId } : {}),
+      ...(selection?.providerId ? { selected_provider: selection.providerId, selected_model: selection.model } : {}),
       message: [{ type: 'plain', text }, ...attachments.map(a => ({ type: a.type, attachment_id: a.id, filename: a.name }))],
       flags: { enable_streaming: true, enable_reasoning: true, enable_inline_genui: false, enable_default_system_prompt: true },
     }));

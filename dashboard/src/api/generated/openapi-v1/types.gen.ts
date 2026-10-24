@@ -713,6 +713,25 @@ export type T2iTemplateRequest = {
     [key: string]: unknown | string;
 };
 
+export type TillithChatOptions = {
+    configs: Array<{
+        id: string;
+        name: string;
+    }>;
+    providers: Array<{
+        /**
+         * Existing selected_provider value for chat WebSocket requests.
+         */
+        id: string;
+        name: string;
+        /**
+         * Existing selected_model value; read from the loaded provider without remote discovery.
+         */
+        model: string;
+    }>;
+    default_config_id: "default";
+};
+
 export type TillithProfile = {
     app: "Tillith";
     /**
@@ -768,6 +787,18 @@ export type GetTillithProfileResponse = ((SuccessEnvelope & {
 }));
 
 export type GetTillithProfileError = (ErrorEnvelope);
+
+export type GetTillithChatOptionsData = {
+    query?: {
+        config_id?: string;
+    };
+};
+
+export type GetTillithChatOptionsResponse = ((SuccessEnvelope & {
+    data?: TillithChatOptions;
+}));
+
+export type GetTillithChatOptionsError = (ErrorEnvelope);
 
 export type LoginData = {
     body: LoginRequest;

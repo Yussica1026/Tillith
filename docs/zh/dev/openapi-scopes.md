@@ -170,6 +170,7 @@ outline: deep
 | `DELETE` | `/api/v1/chat/threads/{thread_id}` | — |
 | `POST` | `/api/v1/chat/threads/{thread_id}/messages` | — |
 | `GET` | `/api/v1/chat/ws` | `chat:admin` |
+| `GET` | `/api/v1/tillith/chat-options` | — |
 | `GET` | `/api/v1/tillith/profile` | — |
 
 ## `data`

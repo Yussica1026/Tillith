@@ -43,6 +43,12 @@ Choose server mode in connection settings, then enter the Tillith server address
 
 After connecting, create a session, send a message or attachment, return to the session list, and view or rename saved conversations. With no model configured, send `/help` to verify a real built-in command exchange. Normal model responses require a separately configured provider. External LLM providers have not been connected or tested in this iteration; a built-in command reply is not evidence of a model call.
 
+## Chat interface
+
+Search conversations by title in the session list. The model button above a chat reads the core's existing profiles and available chat models, then passes the selection with the next message. An empty model list explains that a provider needs configuration. Selections and unsent drafts are kept per session while the page is running and reset on reload or reconnection.
+
+Replies render Markdown tables, lists, quotes, and code blocks. Copy a full reply or one code block, and preview uploaded images inside the app. Incoming fragments preserve your position while reading older messages; use the latest-message button to resume following the response. The composer grows with its content and supports Ctrl/Cmd + Enter without interrupting IME composition.
+
 ## Android build status
 
 The base mobile core uses `mobile/native-python/mobile-requirements.txt` for chat, personas, SQLite, built-in plugins, APIs, and attachments. The complete upstream server requirements remain in `requirements.txt`. External messaging platforms, Docker, FAISS indexing, and additional document converters require their own dependencies; installing a plugin does not establish Android compatibility. A fresh environment with this profile has passed real startup, message and attachment roundtrips, and database persistence after shutdown.
