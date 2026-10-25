@@ -172,6 +172,14 @@ Use chat capabilities and manage ChatUI sessions and projects.
 | `GET` | `/api/v1/chat/ws` | `chat:admin` |
 | `GET` | `/api/v1/tillith/chat-options` | — |
 | `GET` | `/api/v1/tillith/profile` | — |
+| `GET` | `/api/v1/tillith/search` | — |
+| `GET` | `/api/v1/tillith/session-meta` | — |
+| `PATCH` | `/api/v1/tillith/session-meta` | — |
+| `POST` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/branch` | — |
+| `DELETE` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/turn` | — |
+| `POST` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/version` | — |
+| `GET` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/versions` | — |
+| `DELETE` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/versions/{version_id}` | — |
 
 ## `data`
 
