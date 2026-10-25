@@ -12,9 +12,11 @@ from astrbot.dashboard.services.tillith_session_service import TillithSessionSer
 
 from .auth import AuthContext, ScopeDependency
 from .tillith_messages import router as messages_router
+from .tillith_providers import router as providers_router
 
 router = APIRouter(tags=["Tillith"])
 router.include_router(messages_router)
+router.include_router(providers_router)
 
 
 class SessionMetaPatch(BaseModel):

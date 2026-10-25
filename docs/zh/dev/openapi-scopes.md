@@ -64,6 +64,18 @@ outline: deep
 | `POST` | `/api/v1/providers/{provider_id}/embedding-dimension` | — |
 | `PATCH` | `/api/v1/providers/{provider_id}/enabled` | — |
 | `POST` | `/api/v1/providers/{provider_id}/test` | — |
+| `GET` | `/api/v1/tillith/provider-sources` | — |
+| `POST` | `/api/v1/tillith/provider-sources` | — |
+| `PUT` | `/api/v1/tillith/provider-sources/by-id` | — |
+| `DELETE` | `/api/v1/tillith/provider-sources/by-id` | — |
+| `GET` | `/api/v1/tillith/provider-sources/models` | — |
+| `GET` | `/api/v1/tillith/providers` | — |
+| `POST` | `/api/v1/tillith/providers` | — |
+| `PUT` | `/api/v1/tillith/providers/by-id` | — |
+| `DELETE` | `/api/v1/tillith/providers/by-id` | — |
+| `PATCH` | `/api/v1/tillith/providers/enabled` | — |
+| `GET` | `/api/v1/tillith/providers/schema` | — |
+| `POST` | `/api/v1/tillith/providers/test` | — |
 
 ## `persona`
 

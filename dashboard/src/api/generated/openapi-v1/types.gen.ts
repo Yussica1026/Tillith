@@ -757,6 +757,28 @@ export type TillithProfile = {
     core_version: string;
 };
 
+export type TillithProviderEnabled = {
+    enabled: boolean;
+};
+
+export type TillithProviderWrite = {
+    config: {
+        [key: string]: unknown;
+    };
+    /**
+     * Existing source ID for a newly created model. Stored as provider_source_id.
+     */
+    source_id?: (string) | null;
+};
+
+export type TillithPublicProviderConfig = {
+    /**
+     * Paths of nonempty credentials replaced with blank values. Secret strings, lists and objects become empty strings, lists and objects respectively.
+     */
+    secret_fields_present: Array<(string)>;
+    [key: string]: unknown | string;
+};
+
 export type TillithSearchHit = {
     message_id: string;
     session_id: string;
@@ -838,6 +860,160 @@ export type UpdateRequest = {
     reboot?: boolean;
     progress_id?: string;
 };
+
+export type GetTillithProviderSchemaResponse = ((SuccessEnvelope & {
+    data?: {
+        config_schema: {
+            [key: string]: unknown;
+        };
+    };
+}));
+
+export type GetTillithProviderSchemaError = (ErrorEnvelope);
+
+export type ListTillithProviderSourcesResponse = ((SuccessEnvelope & {
+    data?: {
+        provider_sources: Array<TillithPublicProviderConfig>;
+    };
+}));
+
+export type ListTillithProviderSourcesError = (ErrorEnvelope);
+
+export type CreateTillithProviderSourceData = {
+    body: TillithProviderWrite;
+};
+
+export type CreateTillithProviderSourceResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type CreateTillithProviderSourceError = (ErrorEnvelope);
+
+export type ListTillithProvidersResponse = ((SuccessEnvelope & {
+    data?: {
+        providers: Array<TillithPublicProviderConfig>;
+    };
+}));
+
+export type ListTillithProvidersError = (ErrorEnvelope);
+
+export type CreateTillithProviderData = {
+    body: TillithProviderWrite;
+};
+
+export type CreateTillithProviderResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type CreateTillithProviderError = (ErrorEnvelope);
+
+export type UpdateTillithProviderSourceData = {
+    body: TillithProviderWrite;
+    query: {
+        source_id: string;
+    };
+};
+
+export type UpdateTillithProviderSourceResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type UpdateTillithProviderSourceError = (ErrorEnvelope);
+
+export type DeleteTillithProviderSourceData = {
+    query: {
+        source_id: string;
+    };
+};
+
+export type DeleteTillithProviderSourceResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type DeleteTillithProviderSourceError = (ErrorEnvelope);
+
+export type ListTillithSourceModelsData = {
+    query: {
+        source_id: string;
+    };
+};
+
+export type ListTillithSourceModelsResponse = ((SuccessEnvelope & {
+    data?: {
+        provider_source_id: string;
+        models: Array<(string)>;
+    };
+}));
+
+export type ListTillithSourceModelsError = (ErrorEnvelope);
+
+export type UpdateTillithProviderData = {
+    body: TillithProviderWrite;
+    query: {
+        provider_id: string;
+    };
+};
+
+export type UpdateTillithProviderResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type UpdateTillithProviderError = (ErrorEnvelope);
+
+export type DeleteTillithProviderData = {
+    query: {
+        provider_id: string;
+    };
+};
+
+export type DeleteTillithProviderResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type DeleteTillithProviderError = (ErrorEnvelope);
+
+export type SetTillithProviderEnabledData = {
+    body: TillithProviderEnabled;
+    query: {
+        provider_id: string;
+    };
+};
+
+export type SetTillithProviderEnabledResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type SetTillithProviderEnabledError = (ErrorEnvelope);
+
+export type TestTillithProviderData = {
+    query: {
+        provider_id: string;
+    };
+};
+
+export type TestTillithProviderResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+        status: 'available' | 'unavailable';
+        error: (string) | null;
+    };
+}));
+
+export type TestTillithProviderError = (ErrorEnvelope);
 
 export type GetTillithSessionMetaData = {
     query?: {
