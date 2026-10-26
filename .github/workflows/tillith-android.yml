@@ -137,7 +137,7 @@ jobs:
           working-directory: mobile/android
           script: |
             ./gradlew --no-daemon :app:connectedDebugAndroidTest -PembeddedCore=false
-            adb uninstall app.tillith.privatechat
+            if adb shell pm list packages | tr -d '\r' | grep -qx 'package:app.tillith.privatechat'; then adb uninstall app.tillith.privatechat; fi
             adb install app/build/outputs/apk/release/tillith-release.apk
             adb shell am start -W -n app.tillith.privatechat/.MainActivity
             sleep 5
