@@ -29,8 +29,8 @@ public class TillithFilesPlugin extends Plugin {
             throw new IllegalArgumentException("Use a plain file name without folders or control characters");
         }
         String extension = name.substring(name.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
-        if (name.lastIndexOf('.') <= 0 || !(extension.equals("txt") || extension.equals("json") || extension.equals("md"))) {
-            throw new IllegalArgumentException("Only txt, json and md exports are supported");
+        if (name.lastIndexOf('.') <= 0 || !(extension.equals("txt") || extension.equals("json") || extension.equals("jsonl") || extension.equals("md"))) {
+            throw new IllegalArgumentException("Only txt, json, jsonl and md exports are supported");
         }
         if (text == null) throw new IllegalArgumentException("Export text is required");
         if (text.length() > MAX_EXPORT_BYTES) throw new IllegalArgumentException("Export exceeds the 8 MiB limit");
@@ -51,7 +51,7 @@ public class TillithFilesPlugin extends Plugin {
         String extension = name.substring(name.lastIndexOf('.') + 1).toLowerCase(Locale.ROOT);
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType(extension.equals("json") ? "application/json" : extension.equals("md") ? "text/markdown" : "text/plain");
+        intent.setType(extension.equals("jsonl") ? "application/x-ndjson" : extension.equals("json") ? "application/json" : extension.equals("md") ? "text/markdown" : "text/plain");
         intent.putExtra(Intent.EXTRA_TITLE, name);
         try { startActivityForResult(call, intent, "documentSelected"); }
         catch (RuntimeException error) {

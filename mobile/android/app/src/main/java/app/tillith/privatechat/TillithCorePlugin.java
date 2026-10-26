@@ -118,6 +118,7 @@ public class TillithCorePlugin extends Plugin {
             JSONObject config = invoke("connection");
             JSObject result = new JSObject();
             result.put("baseUrl", config.getString("baseUrl")); result.put("apiKey", config.getString("apiKey"));
+            if (config.has("managementKey")) result.put("managementKey", config.getString("managementKey"));
             call.resolve(result);
         } catch (Exception error) { call.reject("The embedded core is not ready"); }
     }

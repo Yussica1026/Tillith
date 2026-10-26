@@ -6,6 +6,7 @@ import { Icon } from './Icon';
 export function ChatOptionsDialog({ value, onApply, onClose }: { value?: ChatSelection; onApply: (value: ChatSelection) => void; onClose: () => void }) {
   const [configId, setConfigId] = useState(value?.configId || '');
   const [providerId, setProviderId] = useState(value?.providerId || '');
+  const [streaming, setStreaming] = useState(value?.streaming !== false);
   const [options, setOptions] = useState<ChatOptions | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,6 +34,7 @@ export function ChatOptionsDialog({ value, onApply, onClose }: { value?: ChatSel
       </select></label>
       {loading ? <p className="options-status" role="status"><Icon name="loader" className="spin" size={16} /> 正在读取配置…</p> : options?.providers.length === 0 ? <p className="options-status" role="status">当前配置还没有可用的聊天模型。请先在核心中配置模型服务，完成后重新读取。</p> : <p className="field-help">{provider ? `当前模型：${provider.model || provider.name}` : '由核心根据当前配置选择默认模型。'}</p>}
     </>}
-    <div className="dialog-actions"><button type="button" className="secondary-button" disabled={loading} onClick={() => setRevision((old) => old + 1)}>刷新</button><button type="button" className="primary-button" disabled={loading || !!error || !options} onClick={() => onApply({ configId: configId || options!.default_config_id, providerId, model: provider?.model || '' })}>应用</button></div>
+    <label className="toggle-field"><input type="checkbox" checked={streaming} onChange={(event) => setStreaming(event.target.checked)} /><span>边生成边显示回复</span></label>
+    <div className="dialog-actions"><button type="button" className="secondary-button" disabled={loading} onClick={() => setRevision((old) => old + 1)}>刷新</button><button type="button" className="primary-button" disabled={loading || !!error || !options} onClick={() => onApply({ configId: configId || options!.default_config_id, providerId, model: provider?.model || '', streaming })}>应用</button></div>
   </Dialog>;
 }

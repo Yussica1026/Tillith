@@ -11,7 +11,7 @@ import pytest_asyncio
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from sqlalchemy import event, select, update
+from sqlalchemy import event, insert, select, update
 
 from astrbot.core.db.po import ConversationV2, PlatformMessageHistory
 from astrbot.core.db.sqlite import SQLiteDatabase
@@ -20,6 +20,7 @@ from astrbot.dashboard.api.tillith_messages import TillithChatCommand, router
 from astrbot.dashboard.responses import ApiError
 from astrbot.dashboard.services.api_key_service import ApiKeyService
 from astrbot.dashboard.services.chat_service import ChatRunState, ChatService
+from astrbot.dashboard.services.tillith_context import bindings, get_context_service
 from astrbot.dashboard.services.tillith_messages import TillithMessageService
 
 
@@ -96,6 +97,79 @@ async def change_reply(service):
                 }
             )
         )
+
+
+@pytest_asyncio.fixture
+async def linked_memory(service):
+    context = get_context_service(service.db)
+    await context.ensure_schema()
+    await service.db.insert_persona("synthetic-memory-persona", "Synthetic instruction")
+    async with service.db.engine.begin() as conn:
+        await conn.execute(
+            insert(bindings).values(
+                session_id="session",
+                creator="owner",
+                persona_id="synthetic-memory-persona",
+                worldbook_ids=[],
+                memory_enabled=True,
+                memory_tools_enabled=False,
+            )
+        )
+    memory = await context.save_memory(
+        "owner",
+        {
+            "persona_id": "synthetic-memory-persona",
+            "text": "Synthetic source memory",
+            "source_message_id": 1,
+        },
+    )
+    return context, memory
+
+
+@pytest.mark.asyncio
+async def test_delete_turn_invalidates_linked_memory_in_same_transaction(
+    service, linked_memory
+):
+    context, memory = linked_memory
+    await service.delete_turn("owner", "session", 1)
+    assert (await context.list_memories("owner"))[0]["invalidated"]
+    assert (await context.save_memory("owner", {"trashed": True}, memory["id"]))[
+        "trashed"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_version_restore_invalidates_current_source_but_keeps_archived_evidence(
+    service, linked_memory
+):
+    context, _ = linked_memory
+    original = await service.list_versions("owner", "session", 1)
+    await change_reply(service)
+    await service.select_version("owner", "session", 1, original["versions"][0]["id"])
+    assert (await context.list_memories("owner"))[0]["invalidated"]
+
+
+@pytest.mark.asyncio
+async def test_failed_version_restore_rolls_back_memory_invalidation(
+    service, linked_memory
+):
+    context, _ = linked_memory
+    original = await service.list_versions("owner", "session", 1)
+    await change_reply(service)
+
+    def reject(_conn, _cursor, statement, _params, _context, _many):
+        if statement.startswith("UPDATE conversations"):
+            raise RuntimeError("synthetic rollback")
+
+    event.listen(service.db.engine.sync_engine, "before_cursor_execute", reject)
+    try:
+        with pytest.raises(RuntimeError, match="synthetic rollback"):
+            await service.select_version(
+                "owner", "session", 1, original["versions"][0]["id"]
+            )
+    finally:
+        event.remove(service.db.engine.sync_engine, "before_cursor_execute", reject)
+    assert not (await context.list_memories("owner"))[0]["invalidated"]
 
 
 @pytest.mark.asyncio

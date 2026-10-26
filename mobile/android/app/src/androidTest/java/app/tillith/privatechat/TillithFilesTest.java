@@ -51,6 +51,27 @@ public class TillithFilesTest {
     }
 
     @Test
+    public void jsonlBackupUsesNdjsonMimeAndWritesExactText() throws Exception {
+        Context context = InstrumentationRegistry.getInstrumentation().getTargetContext();
+        File file = File.createTempFile("tillith-export-test-", ".jsonl", context.getCacheDir());
+        try {
+            TestPlugin plugin = new TestPlugin(context);
+            String text = "{\"synthetic\":\"你好\"}\n{\"synthetic\":2}\n";
+            CapturedCall call = new CapturedCall("synthetic-backup.JSONL", text);
+            plugin.saveText(call);
+            assertEquals("application/x-ndjson", plugin.intent.getType());
+            assertEquals("synthetic-backup.JSONL", plugin.intent.getStringExtra(Intent.EXTRA_TITLE));
+            Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
+            plugin.documentSelected(call, new ActivityResult(Activity.RESULT_OK, new Intent().setData(uri)));
+            assertNull(call.error);
+            assertFalse(call.result.optBoolean("cancelled"));
+            assertArrayEquals(text.getBytes(StandardCharsets.UTF_8), Files.readAllBytes(file.toPath()));
+        } finally {
+            assertTrue(file.delete());
+        }
+    }
+
+    @Test
     public void cancellingDoesNotWriteAndAllowsAnotherExport() {
         TestPlugin plugin = new TestPlugin(null);
         CapturedCall first = new CapturedCall("synthetic.json", "{}");
@@ -71,7 +92,7 @@ public class TillithFilesTest {
 
     @Test
     public void fileNamesExtensionsAndUtf8ByteLimitAreEnforced() {
-        for (String name : new String[] { "../private.txt", "folder/export.txt", "folder\\export.md", ".txt", "data.exe", "data.json.exe", " trailing.txt ", "one\ntwo\n.txt", repeated('a', 180) + ".txt" }) {
+        for (String name : new String[] { "../private.txt", "folder/export.txt", "folder\\export.md", ".txt", ".jsonl", "../backup.jsonl", "data.exe", "data.json.exe", "data.jsonl.exe", " trailing.txt ", "one\ntwo\n.txt", repeated('a', 180) + ".txt" }) {
             TestPlugin plugin = new TestPlugin(null);
             CapturedCall call = new CapturedCall(name, "synthetic");
             plugin.saveText(call);

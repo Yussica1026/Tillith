@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react';
 
-export type IconName = 'arrow' | 'back' | 'chat' | 'check' | 'chevron' | 'cloud' | 'device' | 'close' | 'file' | 'image' | 'loader' | 'more' | 'plus' | 'refresh' | 'settings' | 'stop' | 'trash' | 'edit' | 'paperclip' | 'eye';
+export type IconName = 'arrow' | 'back' | 'chat' | 'check' | 'chevron' | 'cloud' | 'device' | 'close' | 'file' | 'image' | 'loader' | 'more' | 'plus' | 'refresh' | 'settings' | 'stop' | 'trash' | 'edit' | 'paperclip' | 'eye' | 'bolt';
 
 const paths: Record<IconName, string> = {
+  bolt: 'M13 2 4 14h7l-1 8 10-13h-7Z',
   arrow: 'M12 19V5m-6 6 6-6 6 6',
   back: 'm14 6-6 6 6 6',
   chat: 'M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l-3 3V11.5A7.5 7.5 0 0 1 9.5 4h3A7.5 7.5 0 0 1 20 11.5ZM7 10h8m-8 4h5',

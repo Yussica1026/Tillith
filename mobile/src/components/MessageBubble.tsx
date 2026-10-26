@@ -49,9 +49,9 @@ function MessageAttachment({ attachment }: { attachment: Attachment }) {
   </div>;
 }
 
-export function MessageBubble({ message }: { message: Message }) {
+export function MessageBubble({ message, onManage, disabled }: { message: Message; onManage?: () => void; disabled?: boolean }) {
   const assistant = message.role === 'assistant';
-  return <article className={`message message--${message.role} ${message.status === 'error' ? 'message--error' : ''}`} aria-label={assistant ? 'Tillith 的回复' : '我的消息'}>
+  return <article id={'message-' + message.id} tabIndex={-1} className={`message message--${message.role} ${message.status === 'error' ? 'message--error' : ''}`} aria-label={assistant ? 'Tillith 的回复' : '我的消息'}>
     {assistant && <div className="message-author"><Brand compact /><span>Tillith</span>{message.status === 'streaming' && <span className="writing-label">正在回复</span>}</div>}
     <div className="message-body">
       {message.reasoning && <details className="message-reasoning"><summary>思考过程</summary><p>{message.reasoning}</p></details>}
@@ -59,7 +59,8 @@ export function MessageBubble({ message }: { message: Message }) {
       {message.attachments?.map((attachment) => <MessageAttachment key={attachment.id} attachment={attachment} />)}
       {assistant && message.status === 'streaming' && !message.text && !message.reasoning && <span className="typing-dots" aria-label="等待回复"><i /><i /><i /></span>}
       {message.status === 'error' && <p className="message-error">回复未完成，请检查连接后重试。</p>}
-      {assistant && message.text && message.status !== 'streaming' && <div className="message-actions"><CopyButton text={message.text} label="复制回复" /></div>}
+      {message.status !== 'streaming' && <div className="message-actions">{message.text && <CopyButton text={message.text} label={assistant ? '复制回复' : '复制消息'} />}{onManage && <button type="button" className="text-button" disabled={disabled} onClick={onManage} aria-label={assistant ? '回复操作' : '消息操作'}><Icon name="more" size={16} />操作</button>}</div>}
+      {assistant && message.status === 'done' && <p className="message-usage">{message.usage ? `输入 ${message.usage.input ?? '未提供'} · 输出 ${message.usage.output ?? '未提供'} tokens` : '用量未提供'}</p>}
     </div>
   </article>;
 }

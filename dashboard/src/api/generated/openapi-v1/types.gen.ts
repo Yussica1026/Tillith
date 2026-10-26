@@ -732,6 +732,72 @@ export type TillithChatOptions = {
     default_config_id: "default";
 };
 
+export type TillithContextPatch = {
+    persona_id?: (string | null);
+    worldbook_ids?: (Array<(string)> | null);
+    memory_enabled?: (boolean | null);
+    memory_tools_enabled?: (boolean | null);
+};
+
+export type TillithContextSources = {
+    session_id: string;
+    run_id: string;
+    checkpoint_id: string;
+    persona_id: (string) | null;
+    worldbooks: Array<TillithWorldbookSource>;
+    memories: Array<TillithMemorySource>;
+    memory_tools_enabled: boolean;
+    created_at: string;
+};
+
+export type TillithContextState = {
+    persona_id: (string) | null;
+    worldbook_ids: Array<(string)>;
+    memory_enabled: boolean;
+    memory_tools_enabled: boolean;
+};
+
+export type TillithContextSuccessEnvelope = {
+    status: "ok";
+    message?: (string) | null;
+    data: unknown;
+};
+
+export type TillithMemoryPatch = {
+    type?: (string | null);
+    text?: (string | null);
+    starred?: (boolean | null);
+    trashed?: (boolean | null);
+};
+
+export type TillithMemoryRecord = {
+    id: string;
+    persona_id: string;
+    type: string;
+    text: string;
+    starred: boolean;
+    trashed: boolean;
+    invalidated: boolean;
+    source_message_id: (number) | null;
+    created_at: string;
+    updated_at: string;
+};
+
+export type TillithMemorySource = {
+    id: string;
+    text: string;
+    type: string;
+    source_message_id: (number) | null;
+};
+
+export type TillithMemoryWrite = {
+    persona_id: string;
+    type?: string;
+    text: string;
+    starred?: boolean;
+    source_message_id?: (number | null);
+};
+
 export type TillithMessageVersions = {
     user_message_id: number;
     can_select: boolean;
@@ -746,6 +812,28 @@ export type TillithMessageVersions = {
             [key: string]: unknown;
         }>;
     }>;
+};
+
+export type TillithPersonaOption = {
+    id: string;
+    name: string;
+    folder_id: (string) | null;
+    sort_order: number;
+    default_config_id: (string) | null;
+    default_provider_id: (string) | null;
+};
+
+export type TillithPersonaSettings = {
+    persona_id: string;
+    display_name: string;
+    default_config_id: (string) | null;
+    default_provider_id: (string) | null;
+};
+
+export type TillithPersonaSettingsPatch = {
+    display_name?: (string | null);
+    default_config_id?: (string | null);
+    default_provider_id?: (string | null);
 };
 
 export type TillithProfile = {
@@ -818,6 +906,69 @@ export type TillithSessionMetaPatch = unknown | {
     pinned?: boolean;
     starred?: boolean;
     archived?: boolean;
+};
+
+export type TillithWorldbookEntry = {
+    id?: (string | null);
+    title?: string;
+    text: string;
+    enabled?: boolean;
+    always_active?: boolean;
+    keywords?: Array<(string)>;
+    regex?: boolean;
+    case_sensitive?: boolean;
+    scan_depth?: number;
+    position?: 'before_system' | 'after_system' | 'before_history' | 'after_history';
+    role?: 'system' | 'user' | 'assistant';
+    priority?: number;
+};
+
+export type position = 'before_system' | 'after_system' | 'before_history' | 'after_history';
+
+export type role2 = 'system' | 'user' | 'assistant';
+
+export type TillithWorldbookEntryRecord = {
+    id: string;
+    title: string;
+    text: string;
+    enabled: boolean;
+    always_active: boolean;
+    keywords: Array<(string)>;
+    regex: boolean;
+    case_sensitive: boolean;
+    scan_depth: number;
+    position: 'before_system' | 'after_system' | 'before_history' | 'after_history';
+    role: 'system' | 'user' | 'assistant';
+    priority: number;
+};
+
+export type TillithWorldbookImport = {
+    version?: 1;
+    worldbooks: Array<TillithWorldbookWrite>;
+};
+
+export type TillithWorldbookRecord = {
+    name: string;
+    description: string;
+    enabled: boolean;
+    entries: Array<TillithWorldbookEntryRecord>;
+    id: string;
+};
+
+export type TillithWorldbookSource = {
+    book_id: string;
+    entry_id: string;
+    title: string;
+    text: string;
+    position: 'before_system' | 'after_system' | 'before_history' | 'after_history';
+    role: 'system' | 'user' | 'assistant';
+};
+
+export type TillithWorldbookWrite = {
+    name: string;
+    description?: string;
+    enabled?: boolean;
+    entries?: Array<TillithWorldbookEntry>;
 };
 
 export type ToolPermissionPatch = {
@@ -4289,3 +4440,213 @@ export type ReceivePlatformWebhookData = {
 export type ReceivePlatformWebhookResponse = (unknown);
 
 export type ReceivePlatformWebhookError = unknown;
+
+export type ListTillithPersonaOptionsResponse = ((TillithContextSuccessEnvelope & {
+    data: {
+        personas: Array<TillithPersonaOption>;
+    };
+}));
+
+export type ListTillithPersonaOptionsError = (ErrorEnvelope);
+
+export type GetTillithPersonaSettingsData = {
+    path: {
+        persona_id: string;
+    };
+};
+
+export type GetTillithPersonaSettingsResponse = ((TillithContextSuccessEnvelope & {
+    data: TillithPersonaSettings;
+}));
+
+export type GetTillithPersonaSettingsError = (ErrorEnvelope);
+
+export type UpdateTillithPersonaSettingsData = {
+    body: TillithPersonaSettingsPatch;
+    path: {
+        persona_id: string;
+    };
+};
+
+export type UpdateTillithPersonaSettingsResponse = ((TillithContextSuccessEnvelope & {
+    data: TillithPersonaSettings;
+}));
+
+export type UpdateTillithPersonaSettingsError = (ErrorEnvelope);
+
+export type ListTillithPersonaSessionsData = {
+    path: {
+        persona_id: string;
+    };
+};
+
+export type ListTillithPersonaSessionsResponse = ((TillithContextSuccessEnvelope & {
+    data: {
+        session_ids: Array<(string)>;
+    };
+}));
+
+export type ListTillithPersonaSessionsError = (ErrorEnvelope);
+
+export type GetTillithSessionContextData = {
+    path: {
+        session_id: string;
+    };
+};
+
+export type GetTillithSessionContextResponse = ((TillithContextSuccessEnvelope & {
+    data: TillithContextState;
+}));
+
+export type GetTillithSessionContextError = (ErrorEnvelope);
+
+export type UpdateTillithSessionContextData = {
+    body: TillithContextPatch;
+    path: {
+        session_id: string;
+    };
+};
+
+export type UpdateTillithSessionContextResponse = ((TillithContextSuccessEnvelope & {
+    data: TillithContextState;
+}));
+
+export type UpdateTillithSessionContextError = (ErrorEnvelope);
+
+export type ListTillithWorldbooksResponse = ((TillithContextSuccessEnvelope & {
+    data: {
+        worldbooks: Array<TillithWorldbookRecord>;
+    };
+}));
+
+export type ListTillithWorldbooksError = (ErrorEnvelope);
+
+export type CreateTillithWorldbookData = {
+    body: TillithWorldbookWrite;
+};
+
+export type CreateTillithWorldbookResponse = ((TillithContextSuccessEnvelope & {
+    data: TillithWorldbookRecord;
+}));
+
+export type CreateTillithWorldbookError = (ErrorEnvelope);
+
+export type ImportTillithWorldbooksData = {
+    body: TillithWorldbookImport;
+};
+
+export type ImportTillithWorldbooksResponse = ((TillithContextSuccessEnvelope & {
+    data: {
+        worldbooks: Array<TillithWorldbookRecord>;
+    };
+}));
+
+export type ImportTillithWorldbooksError = (ErrorEnvelope);
+
+export type ExportTillithWorldbookData = {
+    path: {
+        book_id: string;
+    };
+};
+
+export type ExportTillithWorldbookResponse = ((TillithContextSuccessEnvelope & {
+    data: TillithWorldbookImport;
+}));
+
+export type ExportTillithWorldbookError = (ErrorEnvelope);
+
+export type UpdateTillithWorldbookData = {
+    body: TillithWorldbookWrite;
+    path: {
+        book_id: string;
+    };
+};
+
+export type UpdateTillithWorldbookResponse = ((TillithContextSuccessEnvelope & {
+    data: TillithWorldbookRecord;
+}));
+
+export type UpdateTillithWorldbookError = (ErrorEnvelope);
+
+export type DeleteTillithWorldbookData = {
+    path: {
+        book_id: string;
+    };
+};
+
+export type DeleteTillithWorldbookResponse = ((TillithContextSuccessEnvelope & {
+    data: {
+        id: string;
+    };
+}));
+
+export type DeleteTillithWorldbookError = (ErrorEnvelope);
+
+export type ListTillithMemoriesData = {
+    query?: {
+        persona_id?: (string | null);
+        q?: string;
+        trashed?: boolean;
+    };
+};
+
+export type ListTillithMemoriesResponse = ((TillithContextSuccessEnvelope & {
+    data: {
+        memories: Array<TillithMemoryRecord>;
+    };
+}));
+
+export type ListTillithMemoriesError = (ErrorEnvelope);
+
+export type CreateTillithMemoryData = {
+    body: TillithMemoryWrite;
+};
+
+export type CreateTillithMemoryResponse = ((TillithContextSuccessEnvelope & {
+    data: TillithMemoryRecord;
+}));
+
+export type CreateTillithMemoryError = (ErrorEnvelope);
+
+export type UpdateTillithMemoryData = {
+    body: TillithMemoryPatch;
+    path: {
+        memory_id: string;
+    };
+};
+
+export type UpdateTillithMemoryResponse = ((TillithContextSuccessEnvelope & {
+    data: TillithMemoryRecord;
+}));
+
+export type UpdateTillithMemoryError = (ErrorEnvelope);
+
+export type TrashTillithMemoryData = {
+    path: {
+        memory_id: string;
+    };
+};
+
+export type TrashTillithMemoryResponse = ((TillithContextSuccessEnvelope & {
+    data: TillithMemoryRecord;
+}));
+
+export type TrashTillithMemoryError = (ErrorEnvelope);
+
+export type GetTillithContextSourcesData = {
+    path: {
+        session_id: string;
+    };
+    query?: {
+        checkpoint_id?: (string | null);
+        run_id?: (string | null);
+    };
+};
+
+export type GetTillithContextSourcesResponse = ((TillithContextSuccessEnvelope & {
+    data: {
+        sources: Array<TillithContextSources>;
+    };
+}));
+
+export type GetTillithContextSourcesError = (ErrorEnvelope);

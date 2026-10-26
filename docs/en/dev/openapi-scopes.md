@@ -183,15 +183,32 @@ Use chat capabilities and manage ChatUI sessions and projects.
 | `POST` | `/api/v1/chat/threads/{thread_id}/messages` | — |
 | `GET` | `/api/v1/chat/ws` | `chat:admin` |
 | `GET` | `/api/v1/tillith/chat-options` | — |
+| `GET` | `/api/v1/tillith/memories` | — |
+| `POST` | `/api/v1/tillith/memories` | — |
+| `PATCH` | `/api/v1/tillith/memories/{memory_id}` | — |
+| `DELETE` | `/api/v1/tillith/memories/{memory_id}` | — |
+| `GET` | `/api/v1/tillith/persona-options` | — |
+| `GET` | `/api/v1/tillith/persona-settings/{persona_id}` | — |
+| `PATCH` | `/api/v1/tillith/persona-settings/{persona_id}` | — |
+| `GET` | `/api/v1/tillith/personas/{persona_id}/sessions` | — |
 | `GET` | `/api/v1/tillith/profile` | — |
 | `GET` | `/api/v1/tillith/search` | — |
 | `GET` | `/api/v1/tillith/session-meta` | — |
 | `PATCH` | `/api/v1/tillith/session-meta` | — |
+| `GET` | `/api/v1/tillith/sessions/{session_id}/context` | — |
+| `PATCH` | `/api/v1/tillith/sessions/{session_id}/context` | — |
+| `GET` | `/api/v1/tillith/sessions/{session_id}/context-sources` | — |
 | `POST` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/branch` | — |
 | `DELETE` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/turn` | — |
 | `POST` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/version` | — |
 | `GET` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/versions` | — |
 | `DELETE` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/versions/{version_id}` | — |
+| `GET` | `/api/v1/tillith/worldbooks` | — |
+| `POST` | `/api/v1/tillith/worldbooks` | — |
+| `POST` | `/api/v1/tillith/worldbooks/import` | — |
+| `PUT` | `/api/v1/tillith/worldbooks/{book_id}` | — |
+| `DELETE` | `/api/v1/tillith/worldbooks/{book_id}` | — |
+| `GET` | `/api/v1/tillith/worldbooks/{book_id}/export` | — |
 
 ## `data`
 

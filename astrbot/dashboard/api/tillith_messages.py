@@ -1,5 +1,6 @@
 """Tillith's WebSocket bridge to the canonical resumable chat service."""
 
+import asyncio
 import json
 from contextlib import aclosing
 from typing import Any, Literal
@@ -151,7 +152,21 @@ async def tillith_chat_ws(websocket: WebSocket):
     try:
         raw_key = _extract_ws_api_key(websocket)
         if not raw_key:
-            raise ApiError("Missing API key", status_code=401)
+            try:
+                first_message = await asyncio.wait_for(websocket.receive_json(), timeout=10)
+            except (asyncio.TimeoutError, ValueError, TypeError, WebSocketDisconnect):
+                first_message = None
+            if (
+                not isinstance(first_message, dict)
+                or first_message.get("t") != "auth"
+                or not isinstance(first_message.get("api_key"), str)
+                or not first_message["api_key"]
+            ):
+                raise ApiError("Missing API key", status_code=401)
+            raw_key = first_message["api_key"]
+            authenticated_by_message = True
+        else:
+            authenticated_by_message = False
         auth = await _require_api_key_scope(websocket, raw_key, "chat")
     except ApiError:
         await websocket.send_json(
@@ -163,6 +178,8 @@ async def tillith_chat_ws(websocket: WebSocket):
         )
         await websocket.close(code=1008)
         return
+    if authenticated_by_message:
+        await websocket.send_json({"type": "auth_ok"})
     service = get_message_service(websocket)
     try:
         while True:

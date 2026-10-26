@@ -86,6 +86,23 @@ public class TillithCoreLifecycleTest {
     }
 
     @Test
+    public void connectionForwardsSeparateManagementKeyAndAcceptsOlderCore() throws Exception {
+        for (boolean management : new boolean[] { false, true }) {
+            field("module").set(null, new FakeModule("ready", true) {
+                @Override public Object callAttr(String name, Object... args) {
+                    return "{\"baseUrl\":\"http://127.0.0.1:6185\",\"apiKey\":\"synthetic-chat\""
+                        + (management ? ",\"managementKey\":\"synthetic-management\"" : "") + "}";
+                }
+            });
+            CapturedCall call = new CapturedCall();
+            new TestPlugin(true).connection(call);
+            assertEquals("synthetic-chat", call.result.optString("apiKey"));
+            assertEquals(management, call.result.has("managementKey"));
+            if (management) assertEquals("synthetic-management", call.result.optString("managementKey"));
+        }
+    }
+
+    @Test
     public void simultaneousRequestsAcrossPluginInstancesAttemptOnlyOnce() throws Exception {
         AtomicInteger attempts = new AtomicInteger();
         CountDownLatch start = new CountDownLatch(1);

@@ -1,0 +1,21 @@
+.chat-context { padding: 0 24px 10px; border-bottom: 1px solid var(--line); background: var(--page); }
+.chat-context-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+.chat-context-actions .text-button { padding: 6px 0; font-size: 12px; min-height: 36px; }
+.context-worldbook-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.context-worldbook-chips > span { display: inline-flex; align-items: center; gap: 6px; padding: 2px 3px 2px 10px; border: 1px solid var(--line); border-radius: 14px; background: var(--blue-wash); font-size: 11px; max-width: 100%; }
+.context-worldbook-chips > span > span { overflow-wrap: anywhere; }
+.context-worldbook-chips button { min-width: 32px; min-height: 32px; color: var(--accent); background: transparent; border-radius: 50%; }
+.context-book-options { border: 1px solid var(--line); padding: 12px; border-radius: 12px; margin: 18px 0; max-height: 27dvh; overflow-y: auto; }
+.context-book-options legend { padding: 0 5px; font-size: 13px; }
+.context-book-options .toggle-field { margin: 0; overflow-wrap: anywhere; }
+.context-empty { padding: 14px 0; font-size: 13px; color: var(--muted); line-height: 1.8; }
+.phrase-list { display: grid; gap: 12px; max-height: 35dvh; overflow-y: auto; }
+.phrase-card { padding: 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.phrase-card strong { font-size: 14px; overflow-wrap: anywhere; }
+.phrase-card p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 1.8; max-height: 140px; overflow-y: auto; }
+.phrase-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 12px; font-size: 12px; }
+.phrase-actions .text-button { padding: 7px 0; font-size: 12px; }
+.phrase-form h3 { font-size: 15px; font-weight: 500; margin-top: 24px; }
+.phrase-form textarea { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); color: var(--ink); resize: vertical; line-height: 1.7; font: inherit; }
+@media (max-width: 440px) { .chat-context { padding-left: 18px; padding-right: 18px; } }
+.dialog-field > select { display: block; width: 100%; min-width: 0; margin-top: 10px; min-height: 46px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 10px; padding: 10px; font: inherit; }

@@ -29,6 +29,7 @@ from astrbot.dashboard.services.chat_service import (
     find_turn_range,
     is_latest_checkpoint,
 )
+from astrbot.dashboard.services.tillith_context import get_context_service
 
 versions = Table(
     "tillith_message_versions",
@@ -113,8 +114,11 @@ class TillithMessageService:
             # Explicit false prevents chat keys from acquiring administrator tool access.
             payload["_api_key_allow_admin_role"] = False
             if data["t"] == "edit":
-                await self.snapshot(username, session_id, data["message_id"])
+                _, state = await self.snapshot(username, session_id, data["message_id"])
                 await self.chat.update_message(username, data)
+                await get_context_service(self.db).invalidate_sources(
+                    username, [row.id for row in state[5]]
+                )
                 record = await self.db.get_platform_message_history_by_id(
                     data["message_id"]
                 )
@@ -124,9 +128,12 @@ class TillithMessageService:
                     _llm_checkpoint_id=record.llm_checkpoint_id,
                 )
             elif data["t"] == "regenerate":
-                await self.snapshot(username, session_id, data["message_id"])
+                _, state = await self.snapshot(username, session_id, data["message_id"])
                 payload.update(
                     await self.chat.prepare_regenerate_message_payload(username, data)
+                )
+                await get_context_service(self.db).invalidate_sources(
+                    username, [row.id for row in state[5]]
                 )
             stream = await self.chat.build_chat_stream(username, payload)
             run_id = next(iter(self.chat.chat_runs_by_session[session_id]))
@@ -272,7 +279,11 @@ class TillithMessageService:
         async with self.locks[session_id]:
             if self.chat.chat_runs_by_session.get(session_id):
                 raise ApiError("Wait for the active response", status_code=409)
-            _, state = await self.snapshot(username, session_id, message_id)
+            current_version, state = await self.snapshot(
+                username, session_id, message_id
+            )
+            if current_version == version_id:
+                return {"user_message_id": state[-1].id, "version_id": version_id}
             session, _, cid, history, (start, end), linked, user = state
             if start <= end and not is_latest_checkpoint(
                 history, user.llm_checkpoint_id
@@ -280,6 +291,8 @@ class TillithMessageService:
                 raise ApiError(
                     "Branch an older turn before switching versions", status_code=409
                 )
+            context = get_context_service(self.db)
+            await context.ensure_schema()
             async with self.db.engine.begin() as conn:
                 row = (
                     (
@@ -297,6 +310,9 @@ class TillithMessageService:
                 )
                 if not row:
                     raise ApiError("Version not found", status_code=404)
+                await context.invalidate_sources(
+                    username, [item.id for item in linked], conn
+                )
                 value = row["snapshot"]
                 restored_user = next(
                     item
@@ -347,8 +363,11 @@ class TillithMessageService:
                 username, session_id, message_id
             )
             await self.ensure_schema()
+            context = get_context_service(self.db)
+            await context.ensure_schema()
             ids = [row.id for row in linked]
             async with self.db.engine.begin() as conn:
+                await context.invalidate_sources(username, ids, conn)
                 await conn.execute(
                     delete(PlatformMessageHistory).where(
                         PlatformMessageHistory.id.in_(ids)
@@ -416,6 +435,12 @@ class TillithMessageService:
             created = await self.chat.new_session(username, "webchat")
             new_id = created["session_id"]
             new_session = await self.db.get_platform_session_by_id(new_id)
+            await get_context_service(self.db).copy_context(
+                username,
+                session_id,
+                new_id,
+                {row.llm_checkpoint_id for row in rows if row.id <= linked[-1].id},
+            )
             conversation = await self.chat.conv_mgr.get_conversation(
                 build_webchat_unified_msg_origin(session), cid
             )

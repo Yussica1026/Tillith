@@ -26,6 +26,7 @@ _state = "stopped"
 _error = ""
 _port = 0
 _api_key = ""
+_management_key = ""
 _used = False
 _stop_requested = threading.Event()
 _loop: asyncio.AbstractEventLoop | None = None
@@ -42,8 +43,8 @@ def connection() -> str:
     """Return the private API connection only after authenticated readiness.
 
     Returns:
-        JSON containing baseUrl and apiKey. Never log or persist this result
-        in WebView localStorage; the key already lives in App-private storage.
+        JSON containing baseUrl, apiKey and managementKey. Never log this result
+        or persist it in WebView localStorage; keys live in App-private storage.
 
     Raises:
         RuntimeError: The core has not completed its readiness probe.
@@ -51,7 +52,13 @@ def connection() -> str:
     with _lock:
         if _state != "ready":
             raise RuntimeError("Tillith core is not ready")
-        return json.dumps({"baseUrl": f"http://127.0.0.1:{_port}", "apiKey": _api_key})
+        return json.dumps(
+            {
+                "baseUrl": f"http://127.0.0.1:{_port}",
+                "apiKey": _api_key,
+                "managementKey": _management_key,
+            }
+        )
 
 
 def stop() -> None:
@@ -77,7 +84,7 @@ async def _serve(root: Path, webui_dir: str) -> None:
         root: App-private writable runtime root, configured before imports.
         webui_dir: Optional extracted dashboard directory; never downloaded.
     """
-    global _state, _port, _api_key
+    global _state, _port, _api_key, _management_key
 
     # These imports must remain inside the configured worker entry point.
     from runtime_bootstrap import initialize_runtime_bootstrap
@@ -120,37 +127,56 @@ async def _serve(root: Path, webui_dir: str) -> None:
 
         # Keep the same raw key and database key_id across process restarts;
         # OpenAPI chat ownership is tied to that key_id, not to created_by.
-        key_path = root / "native-api-key"
-        if not key_path.exists():
-            descriptor = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-            with os.fdopen(descriptor, "w", encoding="ascii") as key_file:
-                key_file.write("abk_" + secrets.token_urlsafe(32))
-                key_file.flush()
-                os.fsync(key_file.fileno())
-        key = key_path.read_text(encoding="ascii")
-        if (
-            not key.startswith("abk_")
-            or len(key) != 47
-            or not all(
-                char.isascii() and (char.isalnum() or char in "_-") for char in key
-            )
+        keys = {}
+        for filename, name, scopes in (
+            ("native-api-key", "Tillith on-device owner", ["chat", "file"]),
+            (
+                "native-management-api-key",
+                "Tillith on-device management",
+                ["provider", "persona", "data"],
+            ),
         ):
-            raise ValueError("Invalid native API identity file")
-        key_hash = ApiKeyService.hash_key(key)
-        record = await db_helper.get_active_api_key_by_hash(key_hash)
-        if record is None:
-            # A revoked identity is not silently re-created or replaced.
-            if any(
-                item.key_hash == key_hash for item in await db_helper.list_api_keys()
+            key_path = root / filename
+            if not key_path.exists():
+                descriptor = os.open(
+                    key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
+                )
+                with os.fdopen(descriptor, "w", encoding="ascii") as key_file:
+                    key_file.write("abk_" + secrets.token_urlsafe(32))
+                    key_file.flush()
+                    os.fsync(key_file.fileno())
+            key = key_path.read_text(encoding="ascii")
+            if (
+                not key.startswith("abk_")
+                or len(key) != 47
+                or not all(
+                    char.isascii() and (char.isalnum() or char in "_-") for char in key
+                )
             ):
-                raise RuntimeError("Native API identity was revoked")
-            await db_helper.create_api_key(
-                name="Tillith on-device owner",
-                key_hash=key_hash,
-                key_prefix=key[:12],
-                scopes=["chat", "file"],
-                created_by="tillith-native",
-            )
+                raise ValueError("Invalid native API identity file")
+            key_hash = ApiKeyService.hash_key(key)
+            record = await db_helper.get_active_api_key_by_hash(key_hash)
+            if record is None:
+                # Revoked or expired identities are never silently replaced.
+                if any(
+                    item.key_hash == key_hash
+                    for item in await db_helper.list_api_keys()
+                ):
+                    raise RuntimeError("Native API identity is no longer active")
+                record = await db_helper.create_api_key(
+                    name=name,
+                    key_hash=key_hash,
+                    key_prefix=key[:12],
+                    scopes=scopes,
+                    created_by="tillith-native",
+                )
+            # Do not promote an existing chat identity to management or silently
+            # restore scopes which the owner deliberately removed.
+            if set(record.scopes or []) != set(scopes):
+                raise RuntimeError("Native API identity scopes do not match")
+            keys[filename] = key
+        key = keys["native-api-key"]
+        management_key = keys["native-management-api-key"]
 
         dashboard = AstrBotDashboard(
             core, db_helper, core.dashboard_shutdown_event, webui_dir or None
@@ -194,7 +220,16 @@ async def _serve(root: Path, webui_dir: str) -> None:
                             and isinstance(identity.get("username"), str)
                             and identity["username"]
                         ):
-                            break
+                            async with client.get(
+                                f"http://127.0.0.1:{port}/api/v1/tillith/providers",
+                                headers={"Authorization": f"Bearer {management_key}"},
+                            ) as management_response:
+                                management_body = await management_response.json()
+                                if (
+                                    management_response.status == 200
+                                    and management_body.get("status") == "ok"
+                                ):
+                                    break
                 except (aiohttp.ClientError, TimeoutError, ValueError):
                     pass
                 if asyncio.get_running_loop().time() >= deadline:
@@ -204,6 +239,7 @@ async def _serve(root: Path, webui_dir: str) -> None:
             if _stop_requested.is_set():
                 raise asyncio.CancelledError
             _port, _api_key, _state = port, key, "ready"
+            _management_key = management_key
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in tasks:
             if task.done():
@@ -234,7 +270,7 @@ def run(root_path: str, webui_dir: str = "") -> None:
         RuntimeError: This interpreter already ran a core or has imported it.
         ValueError: The runtime path is not absolute.
     """
-    global _used, _state, _error, _loop, _main_task, _port, _api_key
+    global _used, _state, _error, _loop, _main_task, _port, _api_key, _management_key
     root = Path(root_path)
     if not root.is_absolute():
         raise ValueError("App-private runtime path must be absolute")
@@ -293,4 +329,5 @@ def run(root_path: str, webui_dir: str = "") -> None:
             if _state != "failed":
                 _state = "stopped"
             _port, _api_key = 0, ""
+            _management_key = ""
             _loop, _main_task = None, None

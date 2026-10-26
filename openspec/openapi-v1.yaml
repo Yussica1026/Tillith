@@ -6217,6 +6217,814 @@ paths:
         "200":
           description: Webhook accepted
 
+  /api/v1/tillith/persona-options:
+    get:
+      tags:
+      - Tillith
+      summary: Persona Options
+      operationId: listTillithPersonaOptions
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - personas
+                      properties:
+                        personas:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/TillithPersonaOption'
+                      additionalProperties: false
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: List stable persona IDs and owner display names/default choices without system prompts.
+        Global persona administration uses the existing persona-scoped endpoints.
+      x-astrbot-scope: chat
+  /api/v1/tillith/persona-settings/{persona_id}:
+    get:
+      tags:
+      - Tillith
+      summary: Get Persona Settings
+      operationId: getTillithPersonaSettings
+      parameters:
+      - name: persona_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Persona Id
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/TillithPersonaSettings'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Read preferences for the authenticated chat identity. Empty display_name uses persona_id;
+        null model/configuration defaults follow the core.
+      x-astrbot-scope: chat
+    patch:
+      tags:
+      - Tillith
+      summary: Patch Persona Settings
+      operationId: updateTillithPersonaSettings
+      parameters:
+      - name: persona_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Persona Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TillithPersonaSettingsPatch'
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/TillithPersonaSettings'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Merge owner preferences without renaming persona_id. Configuration and provider defaults
+        must be present in local chat-options. No provider request is made. Existing session choices are
+        not changed.
+      x-astrbot-scope: chat
+  /api/v1/tillith/personas/{persona_id}/sessions:
+    get:
+      tags:
+      - Tillith
+      summary: Persona Sessions
+      operationId: listTillithPersonaSessions
+      parameters:
+      - name: persona_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Persona Id
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - session_ids
+                      properties:
+                        session_ids:
+                          type: array
+                          items:
+                            type: string
+                      additionalProperties: false
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: List up to 1000 live owned webchat sessions explicitly bound to this persona, ordered
+        by session update time and stable row order descending.
+      x-astrbot-scope: chat
+  /api/v1/tillith/sessions/{session_id}/context:
+    get:
+      tags:
+      - Tillith
+      summary: Get Session Context
+      operationId: getTillithSessionContext
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/TillithContextState'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Read only the authenticated owner session binding. Defaults contain no explicit persona
+        or worldbooks and disable memory recall/tools.
+      x-astrbot-scope: chat
+    patch:
+      tags:
+      - Tillith
+      summary: Patch Session Context
+      operationId: updateTillithSessionContext
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TillithContextPatch'
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/TillithContextState'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Merge explicitly supplied context fields. Only persona_id accepts null. Reject changes
+        while a response is active and persona changes after history exists. Worldbooks must belong to the
+        same chat identity.
+      x-astrbot-scope: chat
+  /api/v1/tillith/worldbooks:
+    get:
+      tags:
+      - Tillith
+      summary: List Worldbooks
+      operationId: listTillithWorldbooks
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - worldbooks
+                      properties:
+                        worldbooks:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/TillithWorldbookRecord'
+                      additionalProperties: false
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: List complete worldbooks owned by the authenticated chat identity.
+      x-astrbot-scope: chat
+    post:
+      tags:
+      - Tillith
+      summary: Create Worldbook
+      operationId: createTillithWorldbook
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TillithWorldbookWrite'
+        required: true
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/TillithWorldbookRecord'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Create an owned worldbook; submitted entry IDs are discarded and fresh IDs allocated.
+        Regex activation accepts a bounded subset, without groups, alternatives, lookarounds or backreferences.
+      x-astrbot-scope: chat
+  /api/v1/tillith/worldbooks/import:
+    post:
+      tags:
+      - Tillith
+      summary: Import Worldbooks
+      operationId: importTillithWorldbooks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TillithWorldbookImport'
+        required: true
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - worldbooks
+                      properties:
+                        worldbooks:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/TillithWorldbookRecord'
+                      additionalProperties: false
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Import version 1 worldbooks with fresh book/entry identities. Each book is saved atomically;
+        imports create new books rather than replacing existing ones.
+      x-astrbot-scope: chat
+  /api/v1/tillith/worldbooks/{book_id}/export:
+    get:
+      tags:
+      - Tillith
+      summary: Export Worldbook
+      operationId: exportTillithWorldbook
+      parameters:
+      - name: book_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Book Id
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/TillithWorldbookImport'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Export one owned worldbook as a version 1 import-compatible object. Contains user-authored
+        book content, but no API credentials, private logs or unrelated persona data.
+      x-astrbot-scope: chat
+  /api/v1/tillith/worldbooks/{book_id}:
+    put:
+      tags:
+      - Tillith
+      summary: Update Worldbook
+      operationId: updateTillithWorldbook
+      parameters:
+      - name: book_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Book Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TillithWorldbookWrite'
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/TillithWorldbookRecord'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Atomically replace an owned book and its entry list. Existing entry IDs must belong to
+        this book; omitted IDs create new entries.
+      x-astrbot-scope: chat
+    delete:
+      tags:
+      - Tillith
+      summary: Delete Worldbook
+      operationId: deleteTillithWorldbook
+      parameters:
+      - name: book_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Book Id
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - id
+                      properties:
+                        id:
+                          type: string
+                      additionalProperties: false
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Delete an owned book and entries, removing the book from the same owner session bindings.
+        Previously recorded injection evidence remains a historical snapshot.
+      x-astrbot-scope: chat
+  /api/v1/tillith/memories:
+    get:
+      tags:
+      - Tillith
+      summary: List Memories
+      operationId: listTillithMemories
+      parameters:
+      - name: persona_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Persona Id
+      - name: q
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 200
+          default: ''
+          title: Q
+      - name: trashed
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+          title: Trashed
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - memories
+                      properties:
+                        memories:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/TillithMemoryRecord'
+                      additionalProperties: false
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: List owned manual memories, optionally filtered by persona, substring and trash state.
+        Invalidated memories remain visible for review but are excluded from recall.
+      x-astrbot-scope: chat
+    post:
+      tags:
+      - Tillith
+      summary: Create Memory
+      operationId: createTillithMemory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TillithMemoryWrite'
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/TillithMemoryRecord'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Create a memory for an existing persona. A source message must belong to an owned session
+        bound to that persona. No automatic summary or embedding request is made.
+      x-astrbot-scope: chat
+  /api/v1/tillith/memories/{memory_id}:
+    patch:
+      tags:
+      - Tillith
+      summary: Update Memory
+      operationId: updateTillithMemory
+      parameters:
+      - name: memory_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Memory Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TillithMemoryPatch'
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/TillithMemoryRecord'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Update owned text/type/star/trash state. Explicitly replacing text clears invalidation
+        and detaches the old source message, treating it as a manually confirmed memory. Setting trashed=false
+        restores a memory.
+      x-astrbot-scope: chat
+    delete:
+      tags:
+      - Tillith
+      summary: Trash Memory
+      operationId: trashTillithMemory
+      parameters:
+      - name: memory_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Memory Id
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      $ref: '#/components/schemas/TillithMemoryRecord'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Move an owned memory to the trash. This is reversible through PATCH and does not permanently
+        erase the record.
+      x-astrbot-scope: chat
+  /api/v1/tillith/sessions/{session_id}/context-sources:
+    get:
+      tags:
+      - Tillith
+      summary: Context Sources
+      operationId: getTillithContextSources
+      parameters:
+      - name: session_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Session Id
+      - name: checkpoint_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Checkpoint Id
+      - name: run_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Run Id
+      responses:
+        '200':
+          description: Successful owned context operation
+          content:
+            application/json:
+              schema:
+                allOf:
+                - $ref: '#/components/schemas/TillithContextSuccessEnvelope'
+                - type: object
+                  required:
+                  - data
+                  properties:
+                    data:
+                      type: object
+                      required:
+                      - sources
+                      properties:
+                        sources:
+                          type: array
+                          items:
+                            $ref: '#/components/schemas/TillithContextSources'
+                      additionalProperties: false
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '409':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+      description: Return up to 100 newest recorded actual injections for an owned live session, optionally
+        selecting a checkpoint or run. Includes exact injected user-authored content. Archived checkpoint
+        sources remain queryable; the context_sources WebSocket event carries the same item shape.
+      x-astrbot-scope: chat
 components:
   securitySchemes:
     ApiKeyAuth:
@@ -7780,3 +8588,565 @@ components:
         content:
           type: string
       additionalProperties: true
+
+    TillithContextSuccessEnvelope:
+      type: object
+      required:
+      - status
+      - data
+      properties:
+        status:
+          type: string
+          const: ok
+        message:
+          type:
+          - string
+          - 'null'
+        data: {}
+      additionalProperties: false
+    TillithContextPatch:
+      properties:
+        persona_id:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Persona Id
+        worldbook_ids:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            maxItems: 30
+          - type: 'null'
+          title: Worldbook Ids
+        memory_enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Memory Enabled
+        memory_tools_enabled:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Memory Tools Enabled
+      additionalProperties: false
+      type: object
+      title: ContextPatch
+    TillithMemoryPatch:
+      properties:
+        type:
+          anyOf:
+          - type: string
+            maxLength: 50
+            minLength: 1
+          - type: 'null'
+          title: Type
+        text:
+          anyOf:
+          - type: string
+            maxLength: 8000
+            minLength: 1
+          - type: 'null'
+          title: Text
+        starred:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Starred
+        trashed:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Trashed
+      additionalProperties: false
+      type: object
+      title: MemoryPatch
+    TillithMemoryWrite:
+      properties:
+        persona_id:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Persona Id
+        type:
+          type: string
+          maxLength: 50
+          minLength: 1
+          title: Type
+          default: note
+        text:
+          type: string
+          maxLength: 8000
+          minLength: 1
+          title: Text
+        starred:
+          type: boolean
+          title: Starred
+          default: false
+        source_message_id:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Source Message Id
+      additionalProperties: false
+      type: object
+      required:
+      - persona_id
+      - text
+      title: MemoryWrite
+    TillithPersonaSettingsPatch:
+      properties:
+        display_name:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Display Name
+        default_config_id:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Default Config Id
+        default_provider_id:
+          anyOf:
+          - type: string
+            maxLength: 200
+          - type: 'null'
+          title: Default Provider Id
+      additionalProperties: false
+      type: object
+      title: PersonaSettingsPatch
+    TillithWorldbookEntry:
+      properties:
+        id:
+          anyOf:
+          - type: string
+            maxLength: 100
+          - type: 'null'
+          title: Id
+        title:
+          type: string
+          maxLength: 200
+          title: Title
+          default: ''
+        text:
+          type: string
+          maxLength: 8000
+          minLength: 1
+          title: Text
+        enabled:
+          type: boolean
+          title: Enabled
+          default: true
+        always_active:
+          type: boolean
+          title: Always Active
+          default: false
+        keywords:
+          items:
+            type: string
+          type: array
+          maxItems: 20
+          title: Keywords
+        regex:
+          type: boolean
+          title: Regex
+          default: false
+        case_sensitive:
+          type: boolean
+          title: Case Sensitive
+          default: false
+        scan_depth:
+          type: integer
+          maximum: 20.0
+          minimum: 0.0
+          title: Scan Depth
+          default: 5
+        position:
+          type: string
+          enum:
+          - before_system
+          - after_system
+          - before_history
+          - after_history
+          title: Position
+          default: after_system
+        role:
+          type: string
+          enum:
+          - system
+          - user
+          - assistant
+          title: Role
+          default: system
+        priority:
+          type: integer
+          maximum: 1000.0
+          minimum: -1000.0
+          title: Priority
+          default: 0
+      additionalProperties: false
+      type: object
+      required:
+      - text
+      title: WorldbookEntry
+    TillithWorldbookImport:
+      properties:
+        version:
+          type: integer
+          const: 1
+          title: Version
+          default: 1
+        worldbooks:
+          items:
+            $ref: '#/components/schemas/TillithWorldbookWrite'
+          type: array
+          maxItems: 30
+          minItems: 1
+          title: Worldbooks
+      additionalProperties: false
+      type: object
+      required:
+      - worldbooks
+      title: WorldbookImport
+    TillithWorldbookWrite:
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        description:
+          type: string
+          maxLength: 2000
+          title: Description
+          default: ''
+        enabled:
+          type: boolean
+          title: Enabled
+          default: true
+        entries:
+          items:
+            $ref: '#/components/schemas/TillithWorldbookEntry'
+          type: array
+          maxItems: 100
+          title: Entries
+      additionalProperties: false
+      type: object
+      required:
+      - name
+      title: WorldbookWrite
+    TillithContextState:
+      type: object
+      required:
+      - persona_id
+      - worldbook_ids
+      - memory_enabled
+      - memory_tools_enabled
+      properties:
+        persona_id:
+          type:
+          - string
+          - 'null'
+        worldbook_ids:
+          type: array
+          items:
+            type: string
+        memory_enabled:
+          type: boolean
+        memory_tools_enabled:
+          type: boolean
+      additionalProperties: false
+    TillithPersonaSettings:
+      type: object
+      required:
+      - persona_id
+      - display_name
+      - default_config_id
+      - default_provider_id
+      properties:
+        persona_id:
+          type: string
+        display_name:
+          type: string
+        default_config_id:
+          type:
+          - string
+          - 'null'
+        default_provider_id:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    TillithPersonaOption:
+      type: object
+      required:
+      - id
+      - name
+      - folder_id
+      - sort_order
+      - default_config_id
+      - default_provider_id
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        folder_id:
+          type:
+          - string
+          - 'null'
+        sort_order:
+          type: integer
+        default_config_id:
+          type:
+          - string
+          - 'null'
+        default_provider_id:
+          type:
+          - string
+          - 'null'
+      additionalProperties: false
+    TillithWorldbookEntryRecord:
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+          maxLength: 200
+          title: Title
+          default: ''
+        text:
+          type: string
+          maxLength: 8000
+          minLength: 1
+          title: Text
+        enabled:
+          type: boolean
+          title: Enabled
+          default: true
+        always_active:
+          type: boolean
+          title: Always Active
+          default: false
+        keywords:
+          items:
+            type: string
+          type: array
+          maxItems: 20
+          title: Keywords
+        regex:
+          type: boolean
+          title: Regex
+          default: false
+        case_sensitive:
+          type: boolean
+          title: Case Sensitive
+          default: false
+        scan_depth:
+          type: integer
+          maximum: 20.0
+          minimum: 0.0
+          title: Scan Depth
+          default: 5
+        position:
+          type: string
+          enum:
+          - before_system
+          - after_system
+          - before_history
+          - after_history
+          title: Position
+          default: after_system
+        role:
+          type: string
+          enum:
+          - system
+          - user
+          - assistant
+          title: Role
+          default: system
+        priority:
+          type: integer
+          maximum: 1000.0
+          minimum: -1000.0
+          title: Priority
+          default: 0
+      additionalProperties: false
+      type: object
+      required:
+      - id
+      - title
+      - text
+      - enabled
+      - always_active
+      - keywords
+      - regex
+      - case_sensitive
+      - scan_depth
+      - position
+      - role
+      - priority
+    TillithWorldbookRecord:
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        description:
+          type: string
+          maxLength: 2000
+          title: Description
+          default: ''
+        enabled:
+          type: boolean
+          title: Enabled
+          default: true
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/TillithWorldbookEntryRecord'
+        id:
+          type: string
+      additionalProperties: false
+      type: object
+      required:
+      - name
+      - description
+      - enabled
+      - entries
+      - id
+    TillithMemoryRecord:
+      type: object
+      required:
+      - id
+      - persona_id
+      - type
+      - text
+      - starred
+      - trashed
+      - invalidated
+      - source_message_id
+      - created_at
+      - updated_at
+      properties:
+        id:
+          type: string
+        persona_id:
+          type: string
+        type:
+          type: string
+        text:
+          type: string
+        starred:
+          type: boolean
+        trashed:
+          type: boolean
+        invalidated:
+          type: boolean
+        source_message_id:
+          type:
+          - integer
+          - 'null'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      additionalProperties: false
+    TillithWorldbookSource:
+      type: object
+      required:
+      - book_id
+      - entry_id
+      - title
+      - text
+      - position
+      - role
+      properties:
+        book_id:
+          type: string
+        entry_id:
+          type: string
+        title:
+          type: string
+        text:
+          type: string
+        position:
+          type: string
+          enum:
+          - before_system
+          - after_system
+          - before_history
+          - after_history
+          title: Position
+          default: after_system
+        role:
+          type: string
+          enum:
+          - system
+          - user
+          - assistant
+          title: Role
+          default: system
+      additionalProperties: false
+    TillithMemorySource:
+      type: object
+      required:
+      - id
+      - text
+      - type
+      - source_message_id
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        type:
+          type: string
+        source_message_id:
+          type:
+          - integer
+          - 'null'
+      additionalProperties: false
+    TillithContextSources:
+      type: object
+      required:
+      - session_id
+      - run_id
+      - checkpoint_id
+      - persona_id
+      - worldbooks
+      - memories
+      - memory_tools_enabled
+      - created_at
+      properties:
+        session_id:
+          type: string
+        run_id:
+          type: string
+        checkpoint_id:
+          type: string
+        persona_id:
+          type:
+          - string
+          - 'null'
+        worldbooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TillithWorldbookSource'
+        memories:
+          type: array
+          items:
+            $ref: '#/components/schemas/TillithMemorySource'
+        memory_tools_enabled:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+      additionalProperties: false

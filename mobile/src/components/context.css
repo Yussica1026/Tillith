@@ -1,0 +1,58 @@
+.context-workspace { padding-bottom: calc(30px + env(safe-area-inset-bottom)); }
+.context-workspace .page-heading { margin-bottom: 22px; }
+.context-workspace .eyebrow { margin-top: 16px; letter-spacing: 1px; }
+.context-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); margin-bottom: 23px; }
+.context-tabs button { min-height: 46px; flex: 1; padding: 10px 9px; background: transparent; color: var(--muted); border-bottom: 2px solid transparent; font-size: 14px; }
+.context-tabs button[aria-current] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.context-intro { color: var(--muted); font-size: 13px; line-height: 1.9; margin-bottom: 22px; }
+.context-toolbar, .context-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.context-toolbar { margin: 14px 0; }
+.context-toolbar h2, .context-sources h2 { font-size: 16px; font-weight: 600; flex: 1; }
+.context-actions { margin-top: 13px; }
+.context-actions .text-button { min-height: 38px; font-size: 12px; }
+.context-filters, .context-form-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 14px; }
+.context-workspace .dialog-field, .context-form .dialog-field { min-width: 0; margin: 13px 0; }
+.context-workspace input, .context-workspace select, .context-form input, .context-form select, .context-form textarea { max-width: 100%; min-width: 0; background: var(--paper); color: var(--ink); border-color: var(--line); }
+.context-form textarea { width: 100%; border: 1px solid var(--line); border-radius: 11px; padding: 11px 12px; font-size: 14px; line-height: 1.8; resize: vertical; min-height: 70px; }
+.context-form small { font-size: 11px; color: var(--muted); line-height: 1.7; }
+.context-cards { display: grid; gap: 15px; margin: 20px 0; }
+.context-card { border: 1px solid var(--line); border-radius: 16px; padding: 18px; background: var(--paper); min-width: 0; }
+.context-card h2 { font-size: 17px; line-height: 1.5; font-weight: 600; overflow-wrap: anywhere; }
+.context-card-heading, .persona-heading { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.context-card-heading > div, .persona-heading > div { flex: 1; min-width: 0; }
+.context-card-heading span, .persona-heading > div > span { display: block; color: var(--muted); margin-top: 5px; font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
+.persona-initial { width: 44px; height: 48px; border-radius: 12px 12px 18px 12px; color: var(--accent); background: var(--blue-wash); display: grid; place-items: center; flex-shrink: 0; font-family: Georgia, "Songti SC", "SimSun", serif; font-size: 23px; }
+.context-excerpt { font-size: 13px; color: var(--muted); line-height: 1.85; margin-top: 15px; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.context-empty { padding: 34px 12px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.9; }
+.context-notice { padding: 13px 15px; margin: 16px 0; border-radius: 11px; border: 1px solid var(--line); background: var(--blue-wash); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
+.context-fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; margin: 20px 0 12px; }
+.context-fieldset legend { font-size: 13px; color: var(--accent); padding: 0 6px; }
+.context-opening { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 5px; }
+.context-entry-selector, .context-search { display: flex; align-items: end; gap: 12px; }
+.context-entry-selector .dialog-field, .context-search .dialog-field { flex: 1; min-width: 0; }
+.context-entry-selector button, .context-search button { margin-bottom: 13px; flex-shrink: 0; min-height: 42px; }
+.worldbook-card { border-left: 3px solid var(--blue-light); }
+.context-card-heading .context-book-mark { display: grid; place-items: center; width: 31px; height: 41px; margin: 0; border: 1px solid var(--line); background: var(--blue-wash); color: var(--accent); border-radius: 3px 8px 8px 3px; font-family: "Songti SC", "SimSun", serif; font-size: 15px; }
+.context-entry-titles { list-style: none; margin: 15px 0 0; padding: 0; font-size: 12px; }
+.context-entry-titles li { padding: 9px 0; border-top: 1px solid var(--line); overflow-wrap: anywhere; line-height: 1.7; }
+.context-entry-titles small { display: block; color: var(--muted); font-size: 10px; }
+.context-checks { display: flex; flex-wrap: wrap; gap: 0 20px; }
+.context-filter-tabs { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 18px; }
+.context-filter-tabs button { padding: 9px 12px; min-height: 40px; background: transparent; border-radius: 9px; font-size: 12px; color: var(--muted); }
+.context-filter-tabs button[aria-pressed="true"] { background: var(--blue-wash); color: var(--accent); }
+.context-star { background: transparent; color: var(--accent); font-size: 27px; width: 42px; height: 42px; flex-shrink: 0; }
+.context-memory-text { margin: 16px 0 10px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.9; }
+.context-memory-invalid { font-size: 11px; line-height: 1.8; color: var(--danger); margin-top: 11px; }
+.memory-card--invalid { border-style: dashed; }
+.context-import-names { font-size: 13px; line-height: 1.9; overflow-wrap: anywhere; padding-left: 24px; max-height: 30dvh; overflow: auto; }
+.context-source-entry { border-top: 1px solid var(--line); margin-top: 30px; padding-top: 14px; }
+.context-sources { min-width: 0; }
+.context-source-round { border: 1px solid var(--line); padding: 13px; border-radius: 12px; margin-top: 14px; }
+.context-source-round summary { font-size: 12px; cursor: pointer; line-height: 1.8; overflow-wrap: anywhere; }
+.context-source-round summary small { display: block; color: var(--muted); margin-top: 4px; }
+.context-source-text { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 13px; }
+.context-source-text strong { font-size: 13px; }
+.context-source-text span { display: block; font-size: 10px; color: var(--muted); margin-top: 5px; }
+.context-source-text p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.9; margin-top: 10px; }
+@media (max-width: 380px) { .context-workspace { padding-left: 16px; padding-right: 16px; } .context-card { padding: 15px; } .context-form-grid { grid-template-columns: minmax(0, 1fr); gap: 0; } .context-filters { grid-template-columns: minmax(0, 1fr); gap: 0; } .context-entry-selector { flex-wrap: wrap; } .context-entry-selector .dialog-field { flex-basis: 100%; } }
+@media (prefers-reduced-motion: reduce) { .context-workspace *, .context-form * { scroll-behavior: auto; transition: none; } }
