@@ -131,12 +131,15 @@ export async function deleteSession(id: string): Promise<void> { await request('
 export async function loadMessages(id: string): Promise<Message[]> {
   const data = await request('/chat/sessions/' + encodeURIComponent(id) + '?page=1&page_size=1000');
   return (data.history || []).map((row: any): Message => {
-    const content = typeof row.content === 'string' ? JSON.parse(row.content) : row.content || {};
-    const parts = Array.isArray(content.message) ? content.message : [];
+    const role = row.sender_id === 'bot' || row.sender_name === 'bot' || row.type === 'bot' ? 'assistant' : 'user';
+    let content: any;
+    try { content = typeof row.content === 'string' ? JSON.parse(row.content) : row.content || {}; }
+    catch { return { id: String(row.id), role, text: '这条消息无法读取', status: 'error' }; }
+    const parts = Array.isArray(content?.message) ? content.message : [];
     return {
-      id: String(row.id), role: row.sender_id === 'bot' || row.sender_name === 'bot' || row.type === 'bot' ? 'assistant' : 'user',
+      id: String(row.id), role,
       text: parts.filter((p: any) => p.type === 'plain').map((p: any) => p.text || '').join(''),
-      reasoning: parts.filter((p: any) => p.type === 'think' || p.type === 'reasoning').map((p: any) => p.type === 'think' ? p.think || '' : p.text || '').join('') || (typeof content.reasoning === 'string' ? content.reasoning : ''),
+      reasoning: parts.filter((p: any) => p.type === 'think' || p.type === 'reasoning').map((p: any) => p.type === 'think' ? p.think || '' : p.text || '').join('') || (typeof content?.reasoning === 'string' ? content.reasoning : ''),
       attachments: parts.filter((p: any) => p.attachment_id && ['image', 'record', 'file', 'video'].includes(p.type)).map((p: any) => ({ id: p.attachment_id, type: p.type, name: p.filename || p.name || '附件' })),
       status: 'done',
     };
