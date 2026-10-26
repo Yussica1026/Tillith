@@ -51,6 +51,10 @@ Replies render Markdown tables, lists, quotes, and code blocks. Copy a full repl
 
 ## Android build status
 
+The `Build Tillith Android` workflow produces release APKs signed with a fixed certificate. Configure repository secrets `TILLITH_ANDROID_KEYSTORE_BASE64` (a Base64-encoded PKCS12 file) and `TILLITH_ANDROID_KEYSTORE_PASSWORD`, using the key alias `tillith-release`. Keep signing material privately outside the repository; missing signing credentials fail the build. Artifacts include certificate verification, the APK SHA-256, and the source commit.
+
+Choose cloud, embedded, or both with `target`; `embedded_abis` selects ARM64 or ARM64/x86_64 for the embedded package. The workflow run number supplies `versionCode`, while subsequent builds retain the same certificate. Old packages signed with a temporary debug certificate cannot be replaced directly by the new certificate; preserve their application data before migrating.
+
 The base mobile core uses `mobile/native-python/mobile-requirements.txt` for chat, personas, SQLite, built-in plugins, APIs, and attachments. The complete upstream server requirements remain in `requirements.txt`. External messaging platforms, Docker, FAISS indexing, and additional document converters require their own dependencies; installing a plugin does not establish Android compatibility. A fresh environment with this profile has passed real startup, message and attachment roundtrips, and database persistence after shutdown.
 
-The Capacitor shell and the embedded entry point in `mobile/native-python` remain under integration. Several Python dependencies require native binaries for the target Android ABI, followed by emulator or device verification. There is no verified working APK yet. A successful embedded-core startup on desktop does not establish that it runs on a phone.
+The cloud release APK has passed fixed-certificate verification, 13 Android tests, and emulator installation and launch checks. The ARM64 embedded package has completed Python dependency installation, packaging, signing, and bundled-backend source verification; starting its core on a phone still needs verification. The x86_64 embedded package has not completed native-dependency validation. A successful embedded-core startup on desktop does not establish that it runs on a phone.

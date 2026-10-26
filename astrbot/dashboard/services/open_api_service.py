@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 from uuid import uuid4
+
+from starlette.websockets import WebSocketDisconnect
 
 from astrbot.core import logger
 from astrbot.core.core_lifecycle import AstrBotCoreLifecycle
@@ -34,6 +37,8 @@ from astrbot.dashboard.services.chat_service import (
 SendJson = Callable[[dict], Awaitable[None]]
 ReceiveJson = Callable[[], Awaitable[Any]]
 CloseWebSocket = Callable[[int, str], Awaitable[None]]
+
+WS_KEEPALIVE_INTERVAL_SECONDS = 20
 
 
 class OpenApiServiceError(Exception):
@@ -268,12 +273,35 @@ class OpenApiService:
         conf_list: list[dict],
         chat_bridge: OpenApiWebSocketChatBridge,
     ) -> None:
+        authenticated_by_message = raw_api_key is None
+        if authenticated_by_message:
+            try:
+                auth_message = await asyncio.wait_for(receive_json(), timeout=10)
+            except WebSocketDisconnect:
+                return
+            except (asyncio.TimeoutError, ValueError, TypeError):
+                auth_message = None
+            if (
+                not isinstance(auth_message, dict)
+                or auth_message.get("t") != "auth"
+                or not isinstance(auth_message.get("api_key"), str)
+                or not auth_message["api_key"]
+            ):
+                message = "Unauthorized"
+                await self.send_chat_ws_error(send_json, message, "UNAUTHORIZED")
+                await close(1008, message)
+                return
+            raw_api_key = auth_message["api_key"]
+
         scopes, auth_err = await self.authenticate_api_key(raw_api_key)
         if scopes is None:
             message = auth_err or "Unauthorized"
             await self.send_chat_ws_error(send_json, message, "UNAUTHORIZED")
             await close(1008, message)
             return
+
+        if authenticated_by_message:
+            await send_json({"type": "auth_ok"})
 
         async def send_error(message: str, code: str) -> None:
             await self.send_chat_ws_error(send_json, message, code)
@@ -455,10 +483,14 @@ class OpenApiService:
             message_accumulator = BotMessageAccumulator()
             agent_stats = {}
             refs = {}
+            last_sent = time.monotonic()
             while True:
                 try:
                     result = await asyncio.wait_for(back_queue.get(), timeout=1)
                 except asyncio.TimeoutError:
+                    if time.monotonic() - last_sent >= WS_KEEPALIVE_INTERVAL_SECONDS:
+                        await send_json({"type": "keepalive"})
+                        last_sent = time.monotonic()
                     continue
 
                 if not result:
@@ -480,12 +512,14 @@ class OpenApiService:
                             "data": json.loads(result_text),
                         }
                         await send_json(stats_info)
+                        last_sent = time.monotonic()
                         agent_stats = stats_info["data"]
                     except Exception:
                         pass
                     continue
 
                 await send_json(result)
+                last_sent = time.monotonic()
 
                 if msg_type == "plain":
                     message_accumulator.add_plain(
@@ -500,6 +534,17 @@ class OpenApiService:
                         msg_type,
                     )
                     message_accumulator.add_attachment(part)
+                    if part and part.get("attachment_id") and part.get("type"):
+                        await send_json(
+                            {
+                                "type": "attachment_saved",
+                                "data": {
+                                    "attachment_id": part["attachment_id"],
+                                    "type": part["type"],
+                                    "filename": part.get("filename", ""),
+                                },
+                            }
+                        )
 
                 should_save = False
                 if msg_type == "end":

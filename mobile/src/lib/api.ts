@@ -131,12 +131,15 @@ export async function deleteSession(id: string): Promise<void> { await request('
 export async function loadMessages(id: string): Promise<Message[]> {
   const data = await request('/chat/sessions/' + encodeURIComponent(id) + '?page=1&page_size=1000');
   return (data.history || []).map((row: any): Message => {
-    const content = typeof row.content === 'string' ? JSON.parse(row.content) : row.content || {};
-    const parts = Array.isArray(content.message) ? content.message : [];
+    const role = row.sender_id === 'bot' || row.sender_name === 'bot' || row.type === 'bot' ? 'assistant' : 'user';
+    let content: any;
+    try { content = typeof row.content === 'string' ? JSON.parse(row.content) : row.content || {}; }
+    catch { return { id: String(row.id), role, text: '这条消息无法读取', status: 'error' }; }
+    const parts = Array.isArray(content?.message) ? content.message : [];
     return {
-      id: String(row.id), role: row.sender_id === 'bot' || row.sender_name === 'bot' || row.type === 'bot' ? 'assistant' : 'user',
+      id: String(row.id), role,
       text: parts.filter((p: any) => p.type === 'plain').map((p: any) => p.text || '').join(''),
-      reasoning: parts.filter((p: any) => p.type === 'think' || p.type === 'reasoning').map((p: any) => p.type === 'think' ? p.think || '' : p.text || '').join('') || (typeof content.reasoning === 'string' ? content.reasoning : ''),
+      reasoning: parts.filter((p: any) => p.type === 'think' || p.type === 'reasoning').map((p: any) => p.type === 'think' ? p.think || '' : p.text || '').join('') || (typeof content?.reasoning === 'string' ? content.reasoning : ''),
       attachments: parts.filter((p: any) => p.attachment_id && ['image', 'record', 'file', 'video'].includes(p.type)).map((p: any) => ({ id: p.attachment_id, type: p.type, name: p.filename || p.name || '附件' })),
       status: 'done',
     };
@@ -172,7 +175,6 @@ export async function sendMessage(id: string, text: string, attachments: Attachm
   if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
   const url = new URL(base + '/api/v1/chat/ws');
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  url.searchParams.set('api_key', key);
   await new Promise<void>((resolve, reject) => {
     const ws = new WebSocket(url);
     sockets.add(ws);
@@ -189,7 +191,8 @@ export async function sendMessage(id: string, text: string, attachments: Attachm
       finish(new DOMException('Cancelled', 'AbortError'));
     };
     signal?.addEventListener('abort', cancel, { once: true });
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'send', username, session_id: id, message_id: crypto.randomUUID(),
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', api_key: key }));
+    const sendChat = () => ws.send(JSON.stringify({ t: 'send', username, session_id: id, message_id: crypto.randomUUID(),
       ...(selection?.configId ? { config_id: selection.configId } : {}),
       ...(selection?.providerId ? { selected_provider: selection.providerId, selected_model: selection.model } : {}),
       message: [{ type: 'plain', text }, ...attachments.map(a => ({ type: a.type, attachment_id: a.id, filename: a.name }))],
@@ -198,8 +201,12 @@ export async function sendMessage(id: string, text: string, attachments: Attachm
     ws.onmessage = (message) => {
       let event;
       try { event = JSON.parse(message.data); } catch { finish(new Error('收到无法解析的回复。')); return; }
-      if (event.type === 'plain' && !['tool_call', 'tool_call_result', 'agent_stats'].includes(event.chain_type)) {
+      if (event.type === 'auth_ok') {
+        sendChat();
+      } else if (event.type === 'plain' && !['tool_call', 'tool_call_result', 'agent_stats'].includes(event.chain_type)) {
         onEvent({ type: event.chain_type === 'reasoning' ? 'reasoning' : 'text', text: String(event.data || '') });
+      } else if (event.type === 'attachment_saved' && event.data?.attachment_id && ['image', 'record', 'file', 'video'].includes(event.data.type)) {
+        onEvent({ type: 'attachment', attachment: { id: String(event.data.attachment_id), type: event.data.type, name: String(event.data.filename || '附件') } });
       } else if (event.type === 'message_saved') {
         onEvent({ type: 'saved', messageId: String(event.data.id) });
       } else if (event.type === 'end') {

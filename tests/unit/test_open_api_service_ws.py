@@ -1,9 +1,12 @@
 import asyncio
 from datetime import datetime, timezone
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
+from starlette.websockets import WebSocketDisconnect
 
+from astrbot.dashboard.api.tillith_messages import tillith_chat_ws
 from astrbot.dashboard.services import open_api_service
 from astrbot.dashboard.services.open_api_service import (
     OpenApiService,
@@ -43,6 +46,10 @@ def _bridge() -> OpenApiWebSocketChatBridge:
         insert_user_message=insert_user_message,
         save_bot_message=save_bot_message,
     )
+
+
+async def _append(items: list[dict], payload: dict) -> None:
+    items.append(payload)
 
 
 @pytest.mark.asyncio
@@ -151,6 +158,153 @@ async def test_run_chat_websocket_handles_control_messages(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_run_chat_websocket_authenticates_first_message(monkeypatch):
+    service = _service()
+    messages = iter(
+        [{"t": "auth", "api_key": "good"}, {"t": "send", "message": "hello"}]
+    )
+    sent: list[dict] = []
+    handled: list[dict] = []
+
+    async def authenticate_api_key(raw_key):
+        assert raw_key == "good"
+        return ["chat"], None
+
+    async def receive_json():
+        try:
+            return next(messages)
+        except StopIteration as exc:
+            raise RuntimeError("disconnect") from exc
+
+    async def handle_chat_ws_send(**kwargs):
+        handled.append(kwargs["post_data"])
+
+    async def close(_code, _reason):
+        raise AssertionError("close should not be called")
+
+    monkeypatch.setattr(service, "authenticate_api_key", authenticate_api_key)
+    monkeypatch.setattr(service, "handle_chat_ws_send", handle_chat_ws_send)
+    await service.run_chat_websocket(
+        raw_api_key=None,
+        receive_json=receive_json,
+        send_json=lambda payload: _append(sent, payload),
+        close=close,
+        conf_list=[],
+        chat_bridge=_bridge(),
+    )
+    assert sent == [{"type": "auth_ok"}]
+    assert handled == [{"t": "send", "message": "hello"}]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("first_message", "expected_error"),
+    [
+        ({"t": "auth", "api_key": "bad"}, "Invalid API key"),
+        ({"t": "send", "message": "hello"}, "Unauthorized"),
+        ({"t": "auth"}, "Unauthorized"),
+    ],
+)
+async def test_run_chat_websocket_rejects_bad_first_message(
+    monkeypatch, first_message, expected_error
+):
+    service = _service()
+    sent: list[dict] = []
+    closed: list[tuple[int, str]] = []
+
+    async def authenticate_api_key(raw_key):
+        assert raw_key == "bad"
+        return None, "Invalid API key"
+
+    async def receive_json():
+        return first_message
+
+    async def close(code, reason):
+        closed.append((code, reason))
+
+    monkeypatch.setattr(service, "authenticate_api_key", authenticate_api_key)
+    await service.run_chat_websocket(
+        raw_api_key=None,
+        receive_json=receive_json,
+        send_json=lambda payload: _append(sent, payload),
+        close=close,
+        conf_list=[],
+        chat_bridge=_bridge(),
+    )
+    assert sent == [{"type": "error", "code": "UNAUTHORIZED", "data": expected_error}]
+    assert closed == [(1008, expected_error)]
+
+
+@pytest.mark.asyncio
+async def test_run_chat_websocket_returns_when_client_disconnects_during_auth():
+    service = _service()
+    receive_json = AsyncMock(side_effect=WebSocketDisconnect(code=1000))
+    send_json = AsyncMock()
+    close = AsyncMock()
+
+    await service.run_chat_websocket(
+        raw_api_key=None,
+        receive_json=receive_json,
+        send_json=send_json,
+        close=close,
+        conf_list=[],
+        chat_bridge=_bridge(),
+    )
+
+    receive_json.assert_awaited_once()
+    send_json.assert_not_called()
+    close.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_tillith_websocket_returns_when_client_disconnects_during_auth():
+    websocket = SimpleNamespace(
+        query_params={},
+        headers={},
+        accept=AsyncMock(),
+        receive_json=AsyncMock(side_effect=WebSocketDisconnect(code=1000)),
+        send_json=AsyncMock(),
+        close=AsyncMock(),
+    )
+
+    await tillith_chat_ws(websocket)
+
+    websocket.receive_json.assert_awaited_once()
+    websocket.send_json.assert_not_called()
+    websocket.close.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_run_chat_websocket_rejects_auth_timeout(monkeypatch):
+    service = _service()
+    sent: list[dict] = []
+    closed: list[tuple[int, str]] = []
+
+    async def wait_for(_awaitable, *, timeout):
+        assert timeout == 10
+        _awaitable.close()
+        raise asyncio.TimeoutError
+
+    async def receive_json():
+        await asyncio.Future()
+
+    async def close(code, reason):
+        closed.append((code, reason))
+
+    monkeypatch.setattr(open_api_service.asyncio, "wait_for", wait_for)
+    await service.run_chat_websocket(
+        raw_api_key=None,
+        receive_json=receive_json,
+        send_json=lambda payload: _append(sent, payload),
+        close=close,
+        conf_list=[],
+        chat_bridge=_bridge(),
+    )
+    assert sent == [{"type": "error", "code": "UNAUTHORIZED", "data": "Unauthorized"}]
+    assert closed == [(1008, "Unauthorized")]
+
+
+@pytest.mark.asyncio
 async def test_prepare_chat_send_rejects_configured_admin_username():
     """The shared HTTP/WS boundary must reject administrator impersonation."""
     service = _service()
@@ -192,13 +346,26 @@ async def test_prepare_chat_send_allows_admin_username_with_subscope(monkeypatch
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("include_reply", [False, True])
+@pytest.mark.parametrize("idle", [False, True])
 async def test_ws_control_frames_do_not_create_empty_bot_history(
-    monkeypatch, include_reply
+    monkeypatch, include_reply, idle
 ):
     """Persist response content while keeping run-control frames out of history."""
     service = _service()
+    if idle:
+        monkeypatch.setattr(open_api_service, "WS_KEEPALIVE_INTERVAL_SECONDS", 0)
     bridge = _bridge()
-    back_queue = asyncio.Queue()
+
+    class IdleQueue(asyncio.Queue):
+        timed_out = False
+
+        async def get(self):
+            if idle and not self.timed_out:
+                self.timed_out = True
+                raise asyncio.TimeoutError
+            return await super().get()
+
+    back_queue = IdleQueue()
     chat_queue = asyncio.Queue()
     sent, saved, removed = [], [], []
     frames = [{"type": "run_started", "streaming": False}]
@@ -269,3 +436,6 @@ async def test_ws_control_frames_do_not_create_empty_bot_history(
     )
     assert sum(frame["type"] == "message_saved" for frame in sent) == int(include_reply)
     assert removed == ["test-run"]
+    assert sum(frame["type"] == "keepalive" for frame in sent) == int(idle)
+    if idle:
+        assert sent[1] == {"type": "keepalive"}

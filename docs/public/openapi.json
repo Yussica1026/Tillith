@@ -144,6 +144,1444 @@
     }
   ],
   "paths": {
+    "/api/v1/tillith/providers/schema": {
+      "get": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Read credential-free provider form definitions",
+        "operationId": "getTillithProviderSchema",
+        "x-astrbot-scope": "provider",
+        "description": "Returns definitions and blank credential templates only. No configured provider or source is included. Does not contact providers.\n\n**Required scope:** `provider`",
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "config_schema"
+                          ],
+                          "properties": {
+                            "config_schema": {
+                              "type": "object",
+                              "additionalProperties": true
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/tillith/provider-sources": {
+      "get": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "List provider sources without credentials",
+        "operationId": "listTillithProviderSources",
+        "x-astrbot-scope": "provider",
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "provider_sources"
+                          ],
+                          "properties": {
+                            "provider_sources": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/TillithPublicProviderConfig"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "**Required scope:** `provider`"
+      },
+      "post": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Create a provider source",
+        "operationId": "createTillithProviderSource",
+        "x-astrbot-scope": "provider",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TillithProviderWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "id"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "**Required scope:** `provider`"
+      }
+    },
+    "/api/v1/tillith/providers": {
+      "get": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "List unmerged model configurations without credentials",
+        "operationId": "listTillithProviders",
+        "x-astrbot-scope": "provider",
+        "description": "Source inheritance is represented by provider_source_id. Source credentials are not copied into model configuration. No model list refresh is performed.\n\n**Required scope:** `provider`",
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "providers"
+                          ],
+                          "properties": {
+                            "providers": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/components/schemas/TillithPublicProviderConfig"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Create a configured model",
+        "operationId": "createTillithProvider",
+        "x-astrbot-scope": "provider",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TillithProviderWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "id"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "**Required scope:** `provider`"
+      }
+    },
+    "/api/v1/tillith/provider-sources/by-id": {
+      "put": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Update a source while preserving blank credentials",
+        "operationId": "updateTillithProviderSource",
+        "x-astrbot-scope": "provider",
+        "description": "Merge explicitly supplied fields with the existing configuration. Omitted or blank credentials, including empty lists and header objects, retain existing server values. This endpoint does not clear credentials.\n\n**Required scope:** `provider`",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TillithProviderWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "id"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Delete a source and its linked models",
+        "operationId": "deleteTillithProviderSource",
+        "x-astrbot-scope": "provider",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "id"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "**Required scope:** `provider`"
+      }
+    },
+    "/api/v1/tillith/provider-sources/models": {
+      "get": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Explicitly fetch the source model list",
+        "operationId": "listTillithSourceModels",
+        "x-astrbot-scope": "provider",
+        "description": "Contacts the selected provider only when explicitly invoked.\n\n**Required scope:** `provider`",
+        "parameters": [
+          {
+            "name": "source_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "provider_source_id",
+                            "models"
+                          ],
+                          "properties": {
+                            "provider_source_id": {
+                              "type": "string"
+                            },
+                            "models": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/tillith/providers/by-id": {
+      "put": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Update a model while preserving blank credentials",
+        "operationId": "updateTillithProvider",
+        "x-astrbot-scope": "provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TillithProviderWrite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "id"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "**Required scope:** `provider`"
+      },
+      "delete": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Delete a configured model",
+        "operationId": "deleteTillithProvider",
+        "x-astrbot-scope": "provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "id"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "**Required scope:** `provider`"
+      }
+    },
+    "/api/v1/tillith/providers/enabled": {
+      "patch": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Enable or disable a configured model",
+        "operationId": "setTillithProviderEnabled",
+        "x-astrbot-scope": "provider",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TillithProviderEnabled"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "id"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        },
+        "description": "**Required scope:** `provider`"
+      }
+    },
+    "/api/v1/tillith/providers/test": {
+      "post": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Explicitly test a configured model",
+        "operationId": "testTillithProvider",
+        "x-astrbot-scope": "provider",
+        "description": "Makes a real provider test request which may be billable. Only invoke after the user requests a test. Error text is reduced to credential-free diagnostic categories.\n\n**Required scope:** `provider`",
+        "parameters": [
+          {
+            "name": "provider_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful provider operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "id",
+                            "status",
+                            "error"
+                          ],
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "available",
+                                "unavailable"
+                              ]
+                            },
+                            "error": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/tillith/session-meta": {
+      "get": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "List owned session flags",
+        "description": "Return live owned sessions with persisted pinned, starred and archived flags. Unset flags default to false. Ordered by pinned first, then session activity. Missing or foreign explicit session IDs return the same 404.\n\n**Required scope:** `chat`",
+        "operationId": "getTillithSessionMeta",
+        "x-astrbot-scope": "chat",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded page of live owned sessions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TillithSessionMetaPage"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Update owned session flags",
+        "description": "Update only supplied boolean flags. At least one flag is required; nulls, coerced booleans and unknown fields are rejected. Ownership comes exclusively from authentication. No session is created by this operation.\n\n**Required scope:** `chat`",
+        "operationId": "patchTillithSessionMeta",
+        "x-astrbot-scope": "chat",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TillithSessionMetaPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Persisted metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TillithSessionMeta"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/tillith/search": {
+      "get": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Search visible messages in owned sessions",
+        "description": "Literal substring search over complete plain-text message parts, excluding reasoning, tool data and attachment metadata. ASCII case is ignored. Results contain at most 500 text characters with optional ellipses around a match, newest message first. Deleted and foreign sessions never appear. No FTS extension is required.\n\n**Required scope:** `chat`",
+        "operationId": "searchTillithMessages",
+        "x-astrbot-scope": "chat",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "description": "Nonblank literal search string; SQL wildcard characters have no special meaning."
+          },
+          {
+            "name": "role",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "user",
+                "assistant"
+              ]
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 1
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Bounded page of matching visible-message snippets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TillithSearchPage"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/tillith/sessions/{session_id}/messages/{message_id}/versions": {
+      "get": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "List saved response versions for an owned turn",
+        "description": "Snapshot the current persisted turn and list its saved versions. can_select is false for older turns; branch those turns before restoring a version. Internal model context is not returned. Legacy messages without a checkpoint cannot be versioned.\n\n**Required scope:** `chat`",
+        "operationId": "listTillithMessageVersions",
+        "x-astrbot-scope": "chat",
+        "responses": {
+          "200": {
+            "description": "Current and saved versions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "$ref": "#/components/schemas/TillithMessageVersions"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/tillith/sessions/{session_id}/messages/{message_id}/version": {
+      "post": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Restore a saved version of the latest owned turn",
+        "description": "Restore visible messages and model context together. Reject restoration while a response is running or when later turns exist. Re-read session history after success because restored assistant rows receive new IDs.\n\n**Required scope:** `chat`",
+        "operationId": "selectTillithMessageVersion",
+        "x-astrbot-scope": "chat",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "version_id"
+                ],
+                "properties": {
+                  "version_id": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Restored version identifiers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "user_message_id",
+                            "version_id"
+                          ],
+                          "properties": {
+                            "user_message_id": {
+                              "type": "integer"
+                            },
+                            "version_id": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/tillith/sessions/{session_id}/messages/{message_id}/turn": {
+      "delete": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Delete an owned message turn and all its saved versions",
+        "description": "Remove the whole checkpoint turn, including its user message and assistant/tool-linked display rows, from visible history and model context. This is not a single bubble deletion. Reject while a response is active.\n\n**Required scope:** `chat`",
+        "operationId": "deleteTillithMessageTurn",
+        "x-astrbot-scope": "chat",
+        "responses": {
+          "200": {
+            "description": "Deleted history record IDs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "deleted_message_ids"
+                          ],
+                          "properties": {
+                            "deleted_message_ids": {
+                              "type": "array",
+                              "items": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/tillith/sessions/{session_id}/messages/{message_id}/branch": {
+      "post": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Create an owned session through a selected assistant turn",
+        "description": "Copy visible history and checkpoint context through the complete selected turn into a new session. Tool call/result pairs remain together. Requires a persisted assistant response with checkpoint information; this is separate from upstream side threads.\n\n**Required scope:** `chat`",
+        "operationId": "branchTillithMessage",
+        "x-astrbot-scope": "chat",
+        "responses": {
+          "200": {
+            "description": "New session identifier",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "session_id",
+                            "context_mode"
+                          ],
+                          "properties": {
+                            "session_id": {
+                              "type": "string"
+                            },
+                            "context_mode": {
+                              "type": "string",
+                              "const": "checkpoint"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/api/v1/tillith/sessions/{session_id}/messages/{message_id}/versions/{version_id}": {
+      "delete": {
+        "tags": [
+          "Tillith"
+        ],
+        "summary": "Delete an inactive saved version of an owned turn",
+        "description": "The active version cannot be deleted through this endpoint. Select another version first, or explicitly delete the complete turn. Reject while a response is active.\n\n**Required scope:** `chat`",
+        "operationId": "deleteTillithMessageVersion",
+        "x-astrbot-scope": "chat",
+        "responses": {
+          "200": {
+            "description": "Deleted saved version identifier",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/SuccessEnvelope"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "required": [
+                            "deleted_version_id"
+                          ],
+                          "properties": {
+                            "deleted_version_id": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
     "/api/v1/tillith/profile": {
       "get": {
         "tags": [
@@ -7195,6 +8633,263 @@
       }
     },
     "schemas": {
+      "TillithPublicProviderConfig": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "secret_fields_present"
+        ],
+        "properties": {
+          "secret_fields_present": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paths of nonempty credentials replaced with blank values. Secret strings, lists and objects become empty strings, lists and objects respectively."
+          }
+        }
+      },
+      "TillithProviderWrite": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "config"
+        ],
+        "properties": {
+          "config": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "source_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "description": "Existing source ID for a newly created model. Stored as provider_source_id."
+          }
+        }
+      },
+      "TillithProviderEnabled": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "enabled"
+        ],
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TillithMessageVersions": {
+        "type": "object",
+        "required": [
+          "user_message_id",
+          "can_select",
+          "versions"
+        ],
+        "properties": {
+          "user_message_id": {
+            "type": "integer"
+          },
+          "can_select": {
+            "type": "boolean"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "created_at",
+                "current",
+                "messages"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "created_at": {
+                  "type": "string"
+                },
+                "current": {
+                  "type": "boolean"
+                },
+                "messages": {
+                  "type": "array",
+                  "description": "Saved visible message content objects, not internal model history.",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "TillithSessionMeta": {
+        "type": "object",
+        "required": [
+          "session_id",
+          "creator",
+          "pinned",
+          "starred",
+          "archived",
+          "updated_at"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string"
+          },
+          "creator": {
+            "type": "string"
+          },
+          "pinned": {
+            "type": "boolean"
+          },
+          "starred": {
+            "type": "boolean"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TillithSessionMetaPatch": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "session_id"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "pinned"
+            ]
+          },
+          {
+            "required": [
+              "starred"
+            ]
+          },
+          {
+            "required": [
+              "archived"
+            ]
+          }
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "pinned": {
+            "type": "boolean"
+          },
+          "starred": {
+            "type": "boolean"
+          },
+          "archived": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TillithSessionMetaPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "has_more"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TillithSessionMeta"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "page_size": {
+            "type": "integer"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "TillithSearchHit": {
+        "type": "object",
+        "required": [
+          "message_id",
+          "session_id",
+          "session_title",
+          "role",
+          "text",
+          "created_at"
+        ],
+        "properties": {
+          "message_id": {
+            "type": "string"
+          },
+          "session_id": {
+            "type": "string"
+          },
+          "session_title": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "user",
+              "assistant"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 502
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "TillithSearchPage": {
+        "type": "object",
+        "required": [
+          "items",
+          "page",
+          "page_size",
+          "has_more"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TillithSearchHit"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "page_size": {
+            "type": "integer"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
       "TillithProfile": {
         "type": "object",
         "required": [

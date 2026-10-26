@@ -732,6 +732,22 @@ export type TillithChatOptions = {
     default_config_id: "default";
 };
 
+export type TillithMessageVersions = {
+    user_message_id: number;
+    can_select: boolean;
+    versions: Array<{
+        id: string;
+        created_at: string;
+        current: boolean;
+        /**
+         * Saved visible message content objects, not internal model history.
+         */
+        messages: Array<{
+            [key: string]: unknown;
+        }>;
+    }>;
+};
+
 export type TillithProfile = {
     app: "Tillith";
     /**
@@ -739,6 +755,69 @@ export type TillithProfile = {
      */
     username: string;
     core_version: string;
+};
+
+export type TillithProviderEnabled = {
+    enabled: boolean;
+};
+
+export type TillithProviderWrite = {
+    config: {
+        [key: string]: unknown;
+    };
+    /**
+     * Existing source ID for a newly created model. Stored as provider_source_id.
+     */
+    source_id?: (string) | null;
+};
+
+export type TillithPublicProviderConfig = {
+    /**
+     * Paths of nonempty credentials replaced with blank values. Secret strings, lists and objects become empty strings, lists and objects respectively.
+     */
+    secret_fields_present: Array<(string)>;
+    [key: string]: unknown | string;
+};
+
+export type TillithSearchHit = {
+    message_id: string;
+    session_id: string;
+    session_title: string;
+    role: 'user' | 'assistant';
+    text: string;
+    created_at: string;
+};
+
+export type role = 'user' | 'assistant';
+
+export type TillithSearchPage = {
+    items: Array<TillithSearchHit>;
+    page: number;
+    page_size: number;
+    has_more: boolean;
+};
+
+export type TillithSessionMeta = {
+    session_id: string;
+    creator: string;
+    pinned: boolean;
+    starred: boolean;
+    archived: boolean;
+    updated_at: string;
+};
+
+export type TillithSessionMetaPage = {
+    items: Array<TillithSessionMeta>;
+    page: number;
+    page_size: number;
+    has_more: boolean;
+};
+
+export type TillithSessionMetaPatch = unknown | {
+    session_id: string;
+    pinned?: boolean;
+    starred?: boolean;
+    archived?: boolean;
 };
 
 export type ToolPermissionPatch = {
@@ -781,6 +860,282 @@ export type UpdateRequest = {
     reboot?: boolean;
     progress_id?: string;
 };
+
+export type GetTillithProviderSchemaResponse = ((SuccessEnvelope & {
+    data?: {
+        config_schema: {
+            [key: string]: unknown;
+        };
+    };
+}));
+
+export type GetTillithProviderSchemaError = (ErrorEnvelope);
+
+export type ListTillithProviderSourcesResponse = ((SuccessEnvelope & {
+    data?: {
+        provider_sources: Array<TillithPublicProviderConfig>;
+    };
+}));
+
+export type ListTillithProviderSourcesError = (ErrorEnvelope);
+
+export type CreateTillithProviderSourceData = {
+    body: TillithProviderWrite;
+};
+
+export type CreateTillithProviderSourceResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type CreateTillithProviderSourceError = (ErrorEnvelope);
+
+export type ListTillithProvidersResponse = ((SuccessEnvelope & {
+    data?: {
+        providers: Array<TillithPublicProviderConfig>;
+    };
+}));
+
+export type ListTillithProvidersError = (ErrorEnvelope);
+
+export type CreateTillithProviderData = {
+    body: TillithProviderWrite;
+};
+
+export type CreateTillithProviderResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type CreateTillithProviderError = (ErrorEnvelope);
+
+export type UpdateTillithProviderSourceData = {
+    body: TillithProviderWrite;
+    query: {
+        source_id: string;
+    };
+};
+
+export type UpdateTillithProviderSourceResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type UpdateTillithProviderSourceError = (ErrorEnvelope);
+
+export type DeleteTillithProviderSourceData = {
+    query: {
+        source_id: string;
+    };
+};
+
+export type DeleteTillithProviderSourceResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type DeleteTillithProviderSourceError = (ErrorEnvelope);
+
+export type ListTillithSourceModelsData = {
+    query: {
+        source_id: string;
+    };
+};
+
+export type ListTillithSourceModelsResponse = ((SuccessEnvelope & {
+    data?: {
+        provider_source_id: string;
+        models: Array<(string)>;
+    };
+}));
+
+export type ListTillithSourceModelsError = (ErrorEnvelope);
+
+export type UpdateTillithProviderData = {
+    body: TillithProviderWrite;
+    query: {
+        provider_id: string;
+    };
+};
+
+export type UpdateTillithProviderResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type UpdateTillithProviderError = (ErrorEnvelope);
+
+export type DeleteTillithProviderData = {
+    query: {
+        provider_id: string;
+    };
+};
+
+export type DeleteTillithProviderResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type DeleteTillithProviderError = (ErrorEnvelope);
+
+export type SetTillithProviderEnabledData = {
+    body: TillithProviderEnabled;
+    query: {
+        provider_id: string;
+    };
+};
+
+export type SetTillithProviderEnabledResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+    };
+}));
+
+export type SetTillithProviderEnabledError = (ErrorEnvelope);
+
+export type TestTillithProviderData = {
+    query: {
+        provider_id: string;
+    };
+};
+
+export type TestTillithProviderResponse = ((SuccessEnvelope & {
+    data?: {
+        id: string;
+        status: 'available' | 'unavailable';
+        error: (string) | null;
+    };
+}));
+
+export type TestTillithProviderError = (ErrorEnvelope);
+
+export type GetTillithSessionMetaData = {
+    query?: {
+        page?: number;
+        page_size?: number;
+        session_id?: string;
+    };
+};
+
+export type GetTillithSessionMetaResponse = ((SuccessEnvelope & {
+    data?: TillithSessionMetaPage;
+}));
+
+export type GetTillithSessionMetaError = (ErrorEnvelope);
+
+export type PatchTillithSessionMetaData = {
+    body: TillithSessionMetaPatch;
+};
+
+export type PatchTillithSessionMetaResponse = ((SuccessEnvelope & {
+    data?: TillithSessionMeta;
+}));
+
+export type PatchTillithSessionMetaError = (ErrorEnvelope);
+
+export type SearchTillithMessagesData = {
+    query: {
+        page?: number;
+        page_size?: number;
+        /**
+         * Nonblank literal search string; SQL wildcard characters have no special meaning.
+         */
+        q: string;
+        role?: 'user' | 'assistant';
+        session_id?: string;
+    };
+};
+
+export type SearchTillithMessagesResponse = ((SuccessEnvelope & {
+    data?: TillithSearchPage;
+}));
+
+export type SearchTillithMessagesError = (ErrorEnvelope);
+
+export type ListTillithMessageVersionsData = {
+    path: {
+        message_id: number;
+        session_id: string;
+    };
+};
+
+export type ListTillithMessageVersionsResponse = ((SuccessEnvelope & {
+    data?: TillithMessageVersions;
+}));
+
+export type ListTillithMessageVersionsError = (ErrorEnvelope);
+
+export type SelectTillithMessageVersionData = {
+    body: {
+        version_id: string;
+    };
+    path: {
+        message_id: number;
+        session_id: string;
+    };
+};
+
+export type SelectTillithMessageVersionResponse = ((SuccessEnvelope & {
+    data?: {
+        user_message_id: number;
+        version_id: string;
+    };
+}));
+
+export type SelectTillithMessageVersionError = (ErrorEnvelope);
+
+export type DeleteTillithMessageTurnData = {
+    path: {
+        message_id: number;
+        session_id: string;
+    };
+};
+
+export type DeleteTillithMessageTurnResponse = ((SuccessEnvelope & {
+    data?: {
+        deleted_message_ids: Array<(number)>;
+    };
+}));
+
+export type DeleteTillithMessageTurnError = (ErrorEnvelope);
+
+export type BranchTillithMessageData = {
+    path: {
+        message_id: number;
+        session_id: string;
+    };
+};
+
+export type BranchTillithMessageResponse = ((SuccessEnvelope & {
+    data?: {
+        session_id: string;
+        context_mode: "checkpoint";
+    };
+}));
+
+export type BranchTillithMessageError = (ErrorEnvelope);
+
+export type DeleteTillithMessageVersionData = {
+    path: {
+        message_id: number;
+        session_id: string;
+        version_id: string;
+    };
+};
+
+export type DeleteTillithMessageVersionResponse = ((SuccessEnvelope & {
+    data?: {
+        deleted_version_id: string;
+    };
+}));
+
+export type DeleteTillithMessageVersionError = (ErrorEnvelope);
 
 export type GetTillithProfileResponse = ((SuccessEnvelope & {
     data?: TillithProfile;

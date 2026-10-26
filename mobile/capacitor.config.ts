@@ -4,7 +4,7 @@ const config: CapacitorConfig = {
   appId: 'app.tillith.privatechat',
   appName: 'Tillith',
   webDir: 'dist',
-  android: { allowMixedContent: true },
+  android: { allowMixedContent: false },
   plugins: { CapacitorHttp: { enabled: true } },
 };
 export default config;

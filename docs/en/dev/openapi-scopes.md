@@ -64,6 +64,18 @@ Manage model providers and provider sources.
 | `POST` | `/api/v1/providers/{provider_id}/embedding-dimension` | — |
 | `PATCH` | `/api/v1/providers/{provider_id}/enabled` | — |
 | `POST` | `/api/v1/providers/{provider_id}/test` | — |
+| `GET` | `/api/v1/tillith/provider-sources` | — |
+| `POST` | `/api/v1/tillith/provider-sources` | — |
+| `PUT` | `/api/v1/tillith/provider-sources/by-id` | — |
+| `DELETE` | `/api/v1/tillith/provider-sources/by-id` | — |
+| `GET` | `/api/v1/tillith/provider-sources/models` | — |
+| `GET` | `/api/v1/tillith/providers` | — |
+| `POST` | `/api/v1/tillith/providers` | — |
+| `PUT` | `/api/v1/tillith/providers/by-id` | — |
+| `DELETE` | `/api/v1/tillith/providers/by-id` | — |
+| `PATCH` | `/api/v1/tillith/providers/enabled` | — |
+| `GET` | `/api/v1/tillith/providers/schema` | — |
+| `POST` | `/api/v1/tillith/providers/test` | — |
 
 ## `persona`
 
@@ -172,6 +184,14 @@ Use chat capabilities and manage ChatUI sessions and projects.
 | `GET` | `/api/v1/chat/ws` | `chat:admin` |
 | `GET` | `/api/v1/tillith/chat-options` | — |
 | `GET` | `/api/v1/tillith/profile` | — |
+| `GET` | `/api/v1/tillith/search` | — |
+| `GET` | `/api/v1/tillith/session-meta` | — |
+| `PATCH` | `/api/v1/tillith/session-meta` | — |
+| `POST` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/branch` | — |
+| `DELETE` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/turn` | — |
+| `POST` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/version` | — |
+| `GET` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/versions` | — |
+| `DELETE` | `/api/v1/tillith/sessions/{session_id}/messages/{message_id}/versions/{version_id}` | — |
 
 ## `data`
 

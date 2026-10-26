@@ -15,11 +15,13 @@ import org.json.JSONObject;
 @CapacitorPlugin(name = "TillithCore")
 public class TillithCorePlugin extends Plugin {
     private static final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private static final Object startLock = new Object();
     private static volatile Object module;
     private static volatile boolean requested;
     private static volatile boolean failed;
+    private static volatile boolean workerFinished;
 
-    private boolean bundled() {
+    boolean bundled() {
         try { Class.forName("com.chaquo.python.Python"); return true; }
         catch (ClassNotFoundException error) { return false; }
     }
@@ -33,21 +35,43 @@ public class TillithCorePlugin extends Plugin {
     private JSObject state() {
         JSObject result = new JSObject();
         boolean available = bundled();
-        boolean ready = false;
+        String lifecycle = "unavailable";
+        boolean restartRequired = false;
         String message = "此安装包尚未包含经过安卓验证的 Python 核心。";
         if (available) {
-            message = failed ? "手机核心未能启动，请检查内置依赖兼容性。" : "手机核心尚未启动。";
-            if (requested && !failed) message = "手机核心正在初始化，请稍后重新检测。";
-            if (module != null) {
+            lifecycle = requested ? "starting" : "idle";
+            if (failed) lifecycle = "failed";
+            else if (workerFinished) lifecycle = "stopped";
+            if (module != null && !failed) {
                 try {
                     String status = invoke("status").optString("state");
-                    ready = status.equals("ready");
-                    if (ready) message = "手机内置核心已就绪，数据保存在本机。";
-                    if (status.equals("failed")) message = "手机核心启动失败，请检查内置依赖兼容性。";
-                } catch (Exception error) { message = "暂时无法读取手机核心状态。"; }
+                    Object used = module.getClass().getMethod("get", Object.class).invoke(module, "_used");
+                    boolean pythonUsed = (Boolean) used.getClass().getMethod("toBoolean").invoke(used);
+                    switch (status) {
+                        case "ready": lifecycle = workerFinished ? "stopped" : "ready"; break;
+                        case "starting": lifecycle = workerFinished ? "stopped" : "starting"; break;
+                        case "failed": lifecycle = "failed"; break;
+                        case "stopping": lifecycle = "stopped"; break;
+                        case "stopped":
+                            // The module is published just before run() is called:
+                            // its initial stopped/_used=False is still starting.
+                            lifecycle = pythonUsed || workerFinished ? "stopped" : requested ? "starting" : "idle";
+                            break;
+                        default: lifecycle = "failed";
+                    }
+                } catch (Exception error) { lifecycle = "failed"; }
+            }
+            restartRequired = lifecycle.equals("failed") || lifecycle.equals("stopped");
+            switch (lifecycle) {
+                case "ready": message = "手机内置核心已就绪，数据保存在本机。"; break;
+                case "starting": message = "手机核心正在初始化，请稍后重新检测。"; break;
+                case "failed": message = "手机核心未能启动或读取状态。需要完全关闭 Tillith 后重新打开才能再试。"; break;
+                case "stopped": message = "手机核心已停止，当前进程不能再次启动。需要完全关闭 Tillith 后重新打开才能再试。"; break;
+                default: message = "手机核心尚未启动。";
             }
         }
-        result.put("available", available); result.put("running", ready); result.put("message", message);
+        result.put("available", available); result.put("running", lifecycle.equals("ready")); result.put("message", message);
+        result.put("state", lifecycle); result.put("restartRequired", restartRequired);
         return result;
     }
 
@@ -55,24 +79,36 @@ public class TillithCorePlugin extends Plugin {
     public void status(PluginCall call) { call.resolve(state()); }
 
     @PluginMethod
-    public synchronized void start(PluginCall call) {
-        if (!bundled() || requested) { call.resolve(state()); return; }
-        requested = true;
-        Context context = getContext().getApplicationContext();
-        worker.execute(() -> {
+    public void start(PluginCall call) {
+        // Plugin instances may change when an Activity is recreated; ownership
+        // of the one-shot Python interpreter belongs to the whole process.
+        synchronized (startLock) {
+            JSObject current = state();
+            if (!current.optBoolean("available") || requested || current.optBoolean("restartRequired")
+                    || current.optBoolean("running")) { call.resolve(current); return; }
+            requested = true;
             try {
-                Class<?> python = Class.forName("com.chaquo.python.Python");
-                if (!(Boolean) python.getMethod("isStarted").invoke(null)) {
-                    Object platform = Class.forName("com.chaquo.python.android.AndroidPlatform").getConstructor(Context.class).newInstance(context);
-                    python.getMethod("start", Class.forName("com.chaquo.python.Python$Platform")).invoke(null, platform);
-                }
-                Object runtime = python.getMethod("getInstance").invoke(null);
-                module = python.getMethod("getModule", String.class).invoke(runtime, "bootstrap");
-                File data = new File(context.getFilesDir(), "tillith-core");
-                module.getClass().getMethod("callAttr", String.class, Object[].class)
-                    .invoke(module, new Object[] { "run", new Object[] { data.getAbsolutePath(), "" } });
-            } catch (Exception error) { failed = true; }
-        });
+                Context context = getContext().getApplicationContext();
+                worker.execute(() -> {
+                    try {
+                        Class<?> python = Class.forName("com.chaquo.python.Python");
+                        if (!(Boolean) python.getMethod("isStarted").invoke(null)) {
+                            Object platform = Class.forName("com.chaquo.python.android.AndroidPlatform").getConstructor(Context.class).newInstance(context);
+                            python.getMethod("start", Class.forName("com.chaquo.python.Python$Platform")).invoke(null, platform);
+                        }
+                        Object runtime = python.getMethod("getInstance").invoke(null);
+                        module = python.getMethod("getModule", String.class).invoke(runtime, "bootstrap");
+                        File data = new File(context.getFilesDir(), "tillith-core");
+                        module.getClass().getMethod("callAttr", String.class, Object[].class)
+                            .invoke(module, new Object[] { "run", new Object[] { data.getAbsolutePath(), "" } });
+                    } catch (Exception | LinkageError error) { failed = true; }
+                    finally { workerFinished = true; }
+                });
+            } catch (Exception | LinkageError error) {
+                failed = true;
+                workerFinished = true;
+            }
+        }
         call.resolve(state());
     }
 
