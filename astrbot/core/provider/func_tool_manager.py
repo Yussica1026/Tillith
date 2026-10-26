@@ -873,7 +873,7 @@ class FunctionToolManager:
 
         mcp_client = MCPClient()
         try:
-            logger.debug(f"testing MCP server connection with config: {config}")
+            logger.debug("Testing MCP server connection")
             await mcp_client.connect_to_server(config, "test")
             tools_res = await mcp_client.list_tools_and_save()
             tool_names = [tool.name for tool in tools_res.tools]
