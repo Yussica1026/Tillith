@@ -11,10 +11,8 @@ from astrbot.dashboard.responses import ApiError, ok
 from astrbot.dashboard.services.tillith_session_service import TillithSessionService
 
 from .auth import AuthContext, ScopeDependency
-from .tillith_context import router as context_router
 
 router = APIRouter(tags=["Tillith"])
-router.include_router(context_router)
 
 
 class SessionMetaPatch(BaseModel):

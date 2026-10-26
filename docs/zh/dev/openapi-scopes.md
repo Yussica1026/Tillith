@@ -338,6 +338,14 @@ outline: deep
 | `DELETE` | `/api/v1/mcp/servers/{server_name}` | — |
 | `PATCH` | `/api/v1/mcp/servers/{server_name}/enabled` | — |
 | `POST` | `/api/v1/mcp/servers/{server_name}/test` | — |
+| `GET` | `/api/v1/tillith/mcp/servers` | — |
+| `POST` | `/api/v1/tillith/mcp/servers` | — |
+| `PUT` | `/api/v1/tillith/mcp/servers/by-name` | — |
+| `DELETE` | `/api/v1/tillith/mcp/servers/by-name` | — |
+| `PATCH` | `/api/v1/tillith/mcp/servers/enabled` | — |
+| `POST` | `/api/v1/tillith/mcp/servers/test` | — |
+| `GET` | `/api/v1/tillith/tools` | — |
+| `PATCH` | `/api/v1/tillith/tools/enabled` | — |
 
 ## `skill`
 

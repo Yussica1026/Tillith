@@ -77,6 +77,59 @@ def stop() -> None:
             pass  # The worker may already have closed its event loop.
 
 
+async def _upgrade_management_identity(db, record):
+    """Grant MCP once to an unchanged legacy identity, without reviving removals.
+
+    Args:
+        db: Existing core database.
+        record: Active management identity loaded by its private key hash.
+
+    Returns:
+        The identity after a conditional atomic scope/name migration.
+
+    Raises:
+        RuntimeError: The identity was revoked during migration.
+    """
+    if (
+        record.name != "Tillith on-device management"
+        or record.created_by != "tillith-native"
+        or set(record.scopes or []) != {"provider", "persona", "data"}
+    ):
+        return record
+    from datetime import datetime, timezone
+
+    from sqlalchemy import or_, update
+    from sqlmodel import col
+
+    from astrbot.core.db.po import ApiKey
+
+    async with db.get_db() as session:
+        async with session.begin():
+            await session.execute(
+                update(ApiKey)
+                .where(
+                    ApiKey.key_id == record.key_id,
+                    ApiKey.key_hash == record.key_hash,
+                    ApiKey.name == "Tillith on-device management",
+                    ApiKey.created_by == "tillith-native",
+                    ApiKey.scopes == record.scopes,
+                    col(ApiKey.revoked_at).is_(None),
+                    or_(
+                        col(ApiKey.expires_at).is_(None),
+                        col(ApiKey.expires_at) > datetime.now(timezone.utc),
+                    ),
+                )
+                .values(
+                    name="Tillith on-device management (MCP v1)",
+                    scopes=["provider", "persona", "data", "mcp"],
+                )
+            )
+    migrated = await db.get_active_api_key_by_hash(record.key_hash)
+    if migrated is None:
+        raise RuntimeError("Native API identity is no longer active")
+    return migrated
+
+
 async def _serve(root: Path, webui_dir: str) -> None:
     """Initialize the original lifecycle and serve its authenticated API.
 
@@ -132,8 +185,8 @@ async def _serve(root: Path, webui_dir: str) -> None:
             ("native-api-key", "Tillith on-device owner", ["chat", "file"]),
             (
                 "native-management-api-key",
-                "Tillith on-device management",
-                ["provider", "persona", "data"],
+                "Tillith on-device management (MCP v1)",
+                ["provider", "persona", "data", "mcp"],
             ),
         ):
             key_path = root / filename
@@ -170,6 +223,8 @@ async def _serve(root: Path, webui_dir: str) -> None:
                     scopes=scopes,
                     created_by="tillith-native",
                 )
+            elif filename == "native-management-api-key":
+                record = await _upgrade_management_identity(db_helper, record)
             # Do not promote an existing chat identity to management or silently
             # restore scopes which the owner deliberately removed.
             if set(record.scopes or []) != set(scopes):

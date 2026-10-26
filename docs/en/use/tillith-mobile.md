@@ -75,6 +75,16 @@ The conversation export menu also offers a JSONL conversation backup using the m
 
 Real-core browser checks with a loopback synthetic model cover persona defaults, worldbook and memory injection, message-linked memories, draft and phrase isolation, individual book removal, JSONL download, persistence after reload, source invalidation, and connected-profile deletion. Management checks cover creation, editing, import/export, trash/restoration, retries after partial saves, and layouts from 320 to 1440 pixels. Native credential slots and file bridge behavior have desktop test coverage; Android device acceptance remains outstanding.
 
+## Tools and remote MCP
+
+After connecting, open **More → Tools and MCP**. The separate management key needs the `mcp` scope; the workspace links back to connection settings when credentials need attention. These controls manage the current core, so changes also affect other conversations using that core.
+
+Search tools by name, description, or source, inspect their availability, and enable or disable editable tools. The MCP workspace supports adding, editing, checking, enabling, disabling, and deleting remote HTTP services. A connection check displays discovered tools; enabled services also expose tools in the tool list. Saving configuration does not guarantee continued remote availability.
+
+Lists do not reveal credentials or request headers. Blank credential fields preserve stored values when editing. The mobile interface cannot create, edit, check, or enable process-based MCP services; existing entries can only be inspected, disabled, or deleted. The removed local bridge is not restored.
+
+This increment covers tool and remote MCP management. Per-call approval, invocation audit, MCP import/export, persona binding, and favorites are still outside this increment; it does not complete all of S4. No new APK has been built. Use this branch's frontend together with its Tillith backend.
+
 ## Android build status
 
 The base mobile core uses `mobile/native-python/mobile-requirements.txt` for chat, personas, SQLite, built-in plugins, APIs, and attachments. The complete upstream server requirements remain in `requirements.txt`. External messaging platforms, Docker, FAISS indexing, and additional document converters require their own dependencies; installing a plugin does not establish Android compatibility. A fresh environment with this profile has passed real startup, message and attachment roundtrips, and database persistence after shutdown.

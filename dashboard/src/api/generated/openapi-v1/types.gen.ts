@@ -763,6 +763,44 @@ export type TillithContextSuccessEnvelope = {
     data: unknown;
 };
 
+export type TillithMcpServerList = {
+    servers: Array<TillithMcpServerView>;
+};
+
+export type TillithMcpServerView = {
+    name: string;
+    active: boolean;
+    connected: boolean;
+    transport: 'streamable_http' | 'sse' | 'stdio' | 'unsupported';
+    url: string;
+    url_secret: boolean;
+    headers_present: boolean;
+    tools: Array<(string)>;
+    readonly: boolean;
+    warning?: (string | null);
+};
+
+export type transport2 = 'streamable_http' | 'sse' | 'stdio' | 'unsupported';
+
+export type TillithMcpTestResult = {
+    tools: Array<(string)>;
+};
+
+/**
+ * Only remote transports and explicit editable fields are accepted.
+ */
+export type TillithMcpWrite = {
+    name: string;
+    url?: string;
+    transport?: 'streamable_http' | 'sse';
+    headers?: {
+        [key: string]: (string);
+    };
+    active?: boolean;
+};
+
+export type transport3 = 'streamable_http' | 'sse';
+
 export type TillithMemoryPatch = {
     type?: (string | null);
     text?: (string | null);
@@ -908,6 +946,62 @@ export type TillithSessionMetaPatch = unknown | {
     archived?: boolean;
 };
 
+export type TillithToolEnabled = {
+    enabled: boolean;
+};
+
+export type TillithToolList = {
+    tools: Array<TillithToolView>;
+};
+
+export type TillithToolsResponse_dict_ = {
+    status: "ok";
+    message?: (string | null);
+    data: {
+        [key: string]: unknown;
+    };
+};
+
+export type TillithToolsResponse_TillithMcpServerList_ = {
+    status: "ok";
+    message?: (string | null);
+    data: TillithMcpServerList;
+};
+
+export type TillithToolsResponse_TillithMcpServerView_ = {
+    status: "ok";
+    message?: (string | null);
+    data: TillithMcpServerView;
+};
+
+export type TillithToolsResponse_TillithMcpTestResult_ = {
+    status: "ok";
+    message?: (string | null);
+    data: TillithMcpTestResult;
+};
+
+export type TillithToolsResponse_TillithToolList_ = {
+    status: "ok";
+    message?: (string | null);
+    data: TillithToolList;
+};
+
+export type TillithToolView = {
+    name: string;
+    description: string;
+    active: boolean;
+    readonly: boolean;
+    origin: 'builtin' | 'mcp' | 'plugin' | 'unknown';
+    origin_name: string;
+    origin_display_name: string;
+    parameters: {
+        [key: string]: unknown;
+    };
+    permission?: (string | null);
+};
+
+export type origin = 'builtin' | 'mcp' | 'plugin' | 'unknown';
+
 export type TillithWorldbookEntry = {
     id?: (string | null);
     title?: string;
@@ -1011,6 +1105,76 @@ export type UpdateRequest = {
     reboot?: boolean;
     progress_id?: string;
 };
+
+export type ListToolsApiV1TillithToolsGetResponse = (TillithToolsResponse_TillithToolList_);
+
+export type ListToolsApiV1TillithToolsGetError = (ErrorEnvelope);
+
+export type SetToolEnabledApiV1TillithToolsEnabledPatchData = {
+    body: TillithToolEnabled;
+    query: {
+        tool_name: string;
+    };
+};
+
+export type SetToolEnabledApiV1TillithToolsEnabledPatchResponse = (TillithToolsResponse_dict_);
+
+export type SetToolEnabledApiV1TillithToolsEnabledPatchError = (ErrorEnvelope);
+
+export type ListServersApiV1TillithMcpServersGetResponse = (TillithToolsResponse_TillithMcpServerList_);
+
+export type ListServersApiV1TillithMcpServersGetError = (ErrorEnvelope);
+
+export type CreateServerApiV1TillithMcpServersPostData = {
+    body: TillithMcpWrite;
+};
+
+export type CreateServerApiV1TillithMcpServersPostResponse = (TillithToolsResponse_TillithMcpServerView_);
+
+export type CreateServerApiV1TillithMcpServersPostError = (ErrorEnvelope);
+
+export type UpdateServerApiV1TillithMcpServersByNamePutData = {
+    body: TillithMcpWrite;
+    query: {
+        server_name: string;
+    };
+};
+
+export type UpdateServerApiV1TillithMcpServersByNamePutResponse = (TillithToolsResponse_TillithMcpServerView_);
+
+export type UpdateServerApiV1TillithMcpServersByNamePutError = (ErrorEnvelope);
+
+export type DeleteServerApiV1TillithMcpServersByNameDeleteData = {
+    query: {
+        server_name: string;
+    };
+};
+
+export type DeleteServerApiV1TillithMcpServersByNameDeleteResponse = (TillithToolsResponse_dict_);
+
+export type DeleteServerApiV1TillithMcpServersByNameDeleteError = (ErrorEnvelope);
+
+export type SetServerEnabledApiV1TillithMcpServersEnabledPatchData = {
+    body: TillithToolEnabled;
+    query: {
+        server_name: string;
+    };
+};
+
+export type SetServerEnabledApiV1TillithMcpServersEnabledPatchResponse = (TillithToolsResponse_TillithMcpServerView_);
+
+export type SetServerEnabledApiV1TillithMcpServersEnabledPatchError = (ErrorEnvelope);
+
+export type TestServerApiV1TillithMcpServersTestPostData = {
+    body: TillithMcpWrite;
+    query?: {
+        server_name?: (string | null);
+    };
+};
+
+export type TestServerApiV1TillithMcpServersTestPostResponse = (TillithToolsResponse_TillithMcpTestResult_);
+
+export type TestServerApiV1TillithMcpServersTestPostError = (ErrorEnvelope);
 
 export type GetTillithProviderSchemaResponse = ((SuccessEnvelope & {
     data?: {
