@@ -78,3 +78,18 @@
   .mcp-header-row > label:first-child { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) { .tools-workspace *, .mcp-form * { transition: none; scroll-behavior: auto; } }
+.tools-transfer-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 18px; }
+.tools-transfer-actions button { min-height: 44px; font-size: 12px; }
+.mcp-transfer { min-width: 0; }
+.mcp-transfer input { min-width: 0; max-width: 100%; color: var(--ink); background: var(--paper); border-color: var(--line); }
+.mcp-transfer input[type="file"] { width: 100%; padding: 12px 0; font-size: 12px; }
+.mcp-transfer-count { color: var(--accent); font-size: 12px; margin: 22px 0 10px; }
+.mcp-transfer-list { display: grid; gap: 12px; margin: 16px 0; }
+.mcp-transfer-row { padding: 14px; border: 1px solid var(--line); border-left: 3px solid var(--blue-light); border-radius: 12px; min-width: 0; }
+.mcp-transfer .toggle-field { align-items: flex-start; margin: 8px 0; overflow-wrap: anywhere; }
+.mcp-transfer .toggle-field input { flex: 0 0 auto; margin-top: 3px; }
+.mcp-transfer .toggle-field span { min-width: 0; }
+.mcp-transfer-row .dialog-field { margin: 14px 0 0; }
+.mcp-transfer .message-error { overflow-wrap: anywhere; margin-bottom: 0; }
+.mcp-export-row { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.mcp-export-row small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; line-height: 1.8; }

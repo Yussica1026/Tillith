@@ -81,9 +81,13 @@ After connecting, open **More → Tools and MCP**. The separate management key n
 
 Search tools by name, description, or source, inspect their availability, and enable or disable editable tools. The MCP workspace supports adding, editing, checking, enabling, disabling, and deleting remote HTTP services. A connection check displays discovered tools; enabled services also expose tools in the tool list. Saving configuration does not guarantee continued remote availability.
 
-Lists do not reveal credentials or request headers. Blank credential fields preserve stored values when editing. The mobile interface cannot create, edit, check, or enable process-based MCP services; existing entries can only be inspected, disabled, or deleted. The removed local bridge is not restored.
+Lists do not reveal credentials or request headers. Blank headers preserve stored values only for the same origin; changing scheme, hostname, or port requires new headers. The edit dialog also supports explicitly clearing headers at the existing address. The mobile interface cannot create, edit, check, or enable process-based MCP services; existing entries can only be inspected, disabled, or deleted. The removed local bridge is not restored.
 
-This increment covers tool and remote MCP management. Per-call approval, invocation audit, MCP import/export, persona binding, and favorites are still outside this increment; it does not complete all of S4. No new APK has been built. Use this branch's frontend together with its Tillith backend.
+The MCP tab includes configuration import and export. Import previews a `mcpServers` JSON file up to 1 MiB and 50 entries before saving selected remote services. Resolve duplicate names and missing addresses in the preview; process-based configurations cannot be imported. Imported services remain disabled and do not connect automatically. Headers from the file are not displayed; editing an imported address removes its original headers, which can be entered later in the service editor. Partial failures retain individual outcomes and do not resubmit successful entries.
+
+Export selected remote services to `Tillith-MCP.json`. Headers and private URL parameters are excluded; addresses containing private parameters are left blank and must be filled in during import. Android reuses the system file-saving bridge; browser acceptance does not establish Android file-picker behavior.
+
+Per-call approval, invocation audit, persona binding, and favorites remain outside this increment; it does not complete all of S4. No new APK has been built. Use this branch's frontend together with its Tillith backend.
 
 ## Android build status
 

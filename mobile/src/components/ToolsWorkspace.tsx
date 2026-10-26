@@ -5,6 +5,7 @@ import type { McpServer, ToolInfo } from '../lib/tools-api';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
 import { McpServerDialog } from './McpServerDialog';
+import { McpTransferDialog } from './McpTransferDialog';
 import './tools.css';
 
 type Workspace = Awaited<ReturnType<typeof toolsApi.loadToolsWorkspace>>;
@@ -25,6 +26,7 @@ export function ToolsWorkspace({ onBack, onSettings }: { onBack: () => void; onS
   const [filter, setFilter] = useState<ToolFilter>('all');
   const [editing, setEditing] = useState<{ server?: McpServer }>();
   const [deleting, setDeleting] = useState<McpServer>();
+  const [transfer, setTransfer] = useState<'import' | 'export'>();
   const [checks, setChecks] = useState<Record<string, ConnectionCheck>>({});
   const active = useRef(false);
   const revision = useRef(0);
@@ -120,6 +122,7 @@ export function ToolsWorkspace({ onBack, onSettings }: { onBack: () => void; onS
         </article>)}</div>
         {visibleTools.length === 0 && <div className="tools-empty"><Icon name="bolt" size={26} /><h2>{data.tools.length ? '没有匹配的工具' : '还没有可用工具'}</h2><p>{data.tools.length ? '换个关键词，或选择其他来源。' : '添加并启用一个远程 MCP 服务后，它提供的工具会出现在这里。'}</p>{!data.tools.length && <button type="button" className="text-button" onClick={() => { setTab('servers'); setQuery(''); }}>添加 MCP 服务<Icon name="chevron" size={15} /></button>}</div>}
       </> : <>
+        <div className="tools-transfer-actions"><button type="button" className="text-button" disabled={busy} onClick={() => setTransfer('import')}>导入配置</button><button type="button" className="text-button" disabled={busy || !data.servers.some(server => !server.readonly)} onClick={() => setTransfer('export')}>导出配置</button></div>
         <p className="tools-help">支持 HTTP 与 SSE 远程服务。先检查连接，再选择是否启用。</p>
         <div className="mcp-list">{visibleServers.map(server => {
           const check = checks[server.name];
@@ -142,6 +145,7 @@ export function ToolsWorkspace({ onBack, onSettings }: { onBack: () => void; onS
       </>}
     </>}
     {editing && <McpServerDialog server={editing.server} existingNames={data?.servers.map(server => server.name) || []} onClose={() => setEditing(undefined)} onSaved={server => { setEditing(undefined); setNotice(server.warning ? safeError(server.warning) : `服务「${server.name}」已保存。${server.active && !server.connected ? '服务尚未连接，请检查连接。' : ''}`); setChecks({}); void refresh(); }} onChanged={() => refresh(false)} />}
+    {transfer && data && <McpTransferDialog mode={transfer} servers={data.servers} onClose={() => setTransfer(undefined)} onChanged={() => refresh(false)} onExported={() => { setTransfer(undefined); setNotice('MCP 配置已导出，认证请求头和私密地址已省略。'); }} />}
     {deleting && <Dialog title="删除 MCP 服务？" onClose={() => { if (!busy) setDeleting(undefined); }}><p className="dialog-description">删除「{deleting.name}」及其连接配置，已启用的服务也会断开。聊天记录仍会保留。</p>{error && <p className="message-error" role="alert">{error}</p>}<div className="dialog-actions"><button type="button" className="secondary-button" disabled={busy} onClick={() => setDeleting(undefined)}>取消</button><button type="button" className="danger-button" disabled={busy} onClick={async () => { const target = deleting; if (await change('delete:' + target.name, () => toolsApi.deleteMcpServer(target.name), `已删除服务「${target.name}」。`) && active.current) { setDeleting(undefined); setChecks(current => { const next = { ...current }; delete next[target.name]; return next; }); } }}>{pending === 'delete:' + deleting.name ? '正在删除…' : '确认删除'}</button></div></Dialog>}
   </main>;
 }
