@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from typing import Any
 from uuid import uuid4
 
+from starlette.websockets import WebSocketDisconnect
+
 from astrbot.core import logger
 from astrbot.core.core_lifecycle import AstrBotCoreLifecycle
 from astrbot.core.db import BaseDatabase
@@ -275,6 +277,8 @@ class OpenApiService:
         if authenticated_by_message:
             try:
                 auth_message = await asyncio.wait_for(receive_json(), timeout=10)
+            except WebSocketDisconnect:
+                return
             except (asyncio.TimeoutError, ValueError, TypeError):
                 auth_message = None
             if (

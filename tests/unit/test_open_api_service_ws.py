@@ -1,9 +1,12 @@
 import asyncio
 from datetime import datetime, timezone
 from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
+from starlette.websockets import WebSocketDisconnect
 
+from astrbot.dashboard.api.tillith_messages import tillith_chat_ws
 from astrbot.dashboard.services import open_api_service
 from astrbot.dashboard.services.open_api_service import (
     OpenApiService,
@@ -157,7 +160,9 @@ async def test_run_chat_websocket_handles_control_messages(monkeypatch):
 @pytest.mark.asyncio
 async def test_run_chat_websocket_authenticates_first_message(monkeypatch):
     service = _service()
-    messages = iter([{"t": "auth", "api_key": "good"}, {"t": "send", "message": "hello"}])
+    messages = iter(
+        [{"t": "auth", "api_key": "good"}, {"t": "send", "message": "hello"}]
+    )
     sent: list[dict] = []
     handled: list[dict] = []
 
@@ -194,9 +199,11 @@ async def test_run_chat_websocket_authenticates_first_message(monkeypatch):
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     ("first_message", "expected_error"),
-    [({"t": "auth", "api_key": "bad"}, "Invalid API key"),
-     ({"t": "send", "message": "hello"}, "Unauthorized"),
-     ({"t": "auth"}, "Unauthorized")],
+    [
+        ({"t": "auth", "api_key": "bad"}, "Invalid API key"),
+        ({"t": "send", "message": "hello"}, "Unauthorized"),
+        ({"t": "auth"}, "Unauthorized"),
+    ],
 )
 async def test_run_chat_websocket_rejects_bad_first_message(
     monkeypatch, first_message, expected_error
@@ -226,6 +233,45 @@ async def test_run_chat_websocket_rejects_bad_first_message(
     )
     assert sent == [{"type": "error", "code": "UNAUTHORIZED", "data": expected_error}]
     assert closed == [(1008, expected_error)]
+
+
+@pytest.mark.asyncio
+async def test_run_chat_websocket_returns_when_client_disconnects_during_auth():
+    service = _service()
+    receive_json = AsyncMock(side_effect=WebSocketDisconnect(code=1000))
+    send_json = AsyncMock()
+    close = AsyncMock()
+
+    await service.run_chat_websocket(
+        raw_api_key=None,
+        receive_json=receive_json,
+        send_json=send_json,
+        close=close,
+        conf_list=[],
+        chat_bridge=_bridge(),
+    )
+
+    receive_json.assert_awaited_once()
+    send_json.assert_not_called()
+    close.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_tillith_websocket_returns_when_client_disconnects_during_auth():
+    websocket = SimpleNamespace(
+        query_params={},
+        headers={},
+        accept=AsyncMock(),
+        receive_json=AsyncMock(side_effect=WebSocketDisconnect(code=1000)),
+        send_json=AsyncMock(),
+        close=AsyncMock(),
+    )
+
+    await tillith_chat_ws(websocket)
+
+    websocket.receive_json.assert_awaited_once()
+    websocket.send_json.assert_not_called()
+    websocket.close.assert_not_called()
 
 
 @pytest.mark.asyncio

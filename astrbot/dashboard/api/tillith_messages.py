@@ -153,8 +153,12 @@ async def tillith_chat_ws(websocket: WebSocket):
         raw_key = _extract_ws_api_key(websocket)
         if not raw_key:
             try:
-                first_message = await asyncio.wait_for(websocket.receive_json(), timeout=10)
-            except (asyncio.TimeoutError, ValueError, TypeError, WebSocketDisconnect):
+                first_message = await asyncio.wait_for(
+                    websocket.receive_json(), timeout=10
+                )
+            except WebSocketDisconnect:
+                return
+            except (asyncio.TimeoutError, ValueError, TypeError):
                 first_message = None
             if (
                 not isinstance(first_message, dict)
