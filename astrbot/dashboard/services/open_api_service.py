@@ -530,6 +530,17 @@ class OpenApiService:
                         msg_type,
                     )
                     message_accumulator.add_attachment(part)
+                    if part and part.get("attachment_id") and part.get("type"):
+                        await send_json(
+                            {
+                                "type": "attachment_saved",
+                                "data": {
+                                    "attachment_id": part["attachment_id"],
+                                    "type": part["type"],
+                                    "filename": part.get("filename", ""),
+                                },
+                            }
+                        )
 
                 should_save = False
                 if msg_type == "end":

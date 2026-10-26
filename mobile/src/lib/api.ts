@@ -205,6 +205,8 @@ export async function sendMessage(id: string, text: string, attachments: Attachm
         sendChat();
       } else if (event.type === 'plain' && !['tool_call', 'tool_call_result', 'agent_stats'].includes(event.chain_type)) {
         onEvent({ type: event.chain_type === 'reasoning' ? 'reasoning' : 'text', text: String(event.data || '') });
+      } else if (event.type === 'attachment_saved' && event.data?.attachment_id && ['image', 'record', 'file', 'video'].includes(event.data.type)) {
+        onEvent({ type: 'attachment', attachment: { id: String(event.data.attachment_id), type: event.data.type, name: String(event.data.filename || '附件') } });
       } else if (event.type === 'message_saved') {
         onEvent({ type: 'saved', messageId: String(event.data.id) });
       } else if (event.type === 'end') {
