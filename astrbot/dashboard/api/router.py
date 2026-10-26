@@ -29,6 +29,8 @@ from .stats import router as stats_router
 from .subagents import router as subagents_router
 from .t2i import router as t2i_router
 from .tillith import router as tillith_router
+from .tillith_messages import router as tillith_messages_router
+from .tillith_providers import router as tillith_providers_router
 from .tools import router as tools_router
 from .updates import router as updates_router
 
@@ -65,6 +67,8 @@ def build_api_router() -> APIRouter:
         open_api_router,
         live_chat_router,
         tillith_router,
+        tillith_messages_router,
+        tillith_providers_router,
     )
     for child_router in child_routers:
         for route in child_router.routes:
