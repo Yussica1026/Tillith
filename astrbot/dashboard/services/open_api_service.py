@@ -271,12 +271,33 @@ class OpenApiService:
         conf_list: list[dict],
         chat_bridge: OpenApiWebSocketChatBridge,
     ) -> None:
+        authenticated_by_message = raw_api_key is None
+        if authenticated_by_message:
+            try:
+                auth_message = await asyncio.wait_for(receive_json(), timeout=10)
+            except (asyncio.TimeoutError, ValueError, TypeError):
+                auth_message = None
+            if (
+                not isinstance(auth_message, dict)
+                or auth_message.get("t") != "auth"
+                or not isinstance(auth_message.get("api_key"), str)
+                or not auth_message["api_key"]
+            ):
+                message = "Unauthorized"
+                await self.send_chat_ws_error(send_json, message, "UNAUTHORIZED")
+                await close(1008, message)
+                return
+            raw_api_key = auth_message["api_key"]
+
         scopes, auth_err = await self.authenticate_api_key(raw_api_key)
         if scopes is None:
             message = auth_err or "Unauthorized"
             await self.send_chat_ws_error(send_json, message, "UNAUTHORIZED")
             await close(1008, message)
             return
+
+        if authenticated_by_message:
+            await send_json({"type": "auth_ok"})
 
         async def send_error(message: str, code: str) -> None:
             await self.send_chat_ws_error(send_json, message, code)

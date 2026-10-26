@@ -45,6 +45,10 @@ def _bridge() -> OpenApiWebSocketChatBridge:
     )
 
 
+async def _append(items: list[dict], payload: dict) -> None:
+    items.append(payload)
+
+
 @pytest.mark.asyncio
 async def test_run_chat_websocket_closes_when_api_key_is_invalid(monkeypatch):
     service = _service()
@@ -148,6 +152,110 @@ async def test_run_chat_websocket_handles_control_messages(monkeypatch):
             "allow_admin_username": True,
         }
     ]
+
+
+@pytest.mark.asyncio
+async def test_run_chat_websocket_authenticates_first_message(monkeypatch):
+    service = _service()
+    messages = iter([{"t": "auth", "api_key": "good"}, {"t": "send", "message": "hello"}])
+    sent: list[dict] = []
+    handled: list[dict] = []
+
+    async def authenticate_api_key(raw_key):
+        assert raw_key == "good"
+        return ["chat"], None
+
+    async def receive_json():
+        try:
+            return next(messages)
+        except StopIteration as exc:
+            raise RuntimeError("disconnect") from exc
+
+    async def handle_chat_ws_send(**kwargs):
+        handled.append(kwargs["post_data"])
+
+    async def close(_code, _reason):
+        raise AssertionError("close should not be called")
+
+    monkeypatch.setattr(service, "authenticate_api_key", authenticate_api_key)
+    monkeypatch.setattr(service, "handle_chat_ws_send", handle_chat_ws_send)
+    await service.run_chat_websocket(
+        raw_api_key=None,
+        receive_json=receive_json,
+        send_json=lambda payload: _append(sent, payload),
+        close=close,
+        conf_list=[],
+        chat_bridge=_bridge(),
+    )
+    assert sent == [{"type": "auth_ok"}]
+    assert handled == [{"t": "send", "message": "hello"}]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("first_message", "expected_error"),
+    [({"t": "auth", "api_key": "bad"}, "Invalid API key"),
+     ({"t": "send", "message": "hello"}, "Unauthorized"),
+     ({"t": "auth"}, "Unauthorized")],
+)
+async def test_run_chat_websocket_rejects_bad_first_message(
+    monkeypatch, first_message, expected_error
+):
+    service = _service()
+    sent: list[dict] = []
+    closed: list[tuple[int, str]] = []
+
+    async def authenticate_api_key(raw_key):
+        assert raw_key == "bad"
+        return None, "Invalid API key"
+
+    async def receive_json():
+        return first_message
+
+    async def close(code, reason):
+        closed.append((code, reason))
+
+    monkeypatch.setattr(service, "authenticate_api_key", authenticate_api_key)
+    await service.run_chat_websocket(
+        raw_api_key=None,
+        receive_json=receive_json,
+        send_json=lambda payload: _append(sent, payload),
+        close=close,
+        conf_list=[],
+        chat_bridge=_bridge(),
+    )
+    assert sent == [{"type": "error", "code": "UNAUTHORIZED", "data": expected_error}]
+    assert closed == [(1008, expected_error)]
+
+
+@pytest.mark.asyncio
+async def test_run_chat_websocket_rejects_auth_timeout(monkeypatch):
+    service = _service()
+    sent: list[dict] = []
+    closed: list[tuple[int, str]] = []
+
+    async def wait_for(_awaitable, *, timeout):
+        assert timeout == 10
+        _awaitable.close()
+        raise asyncio.TimeoutError
+
+    async def receive_json():
+        await asyncio.Future()
+
+    async def close(code, reason):
+        closed.append((code, reason))
+
+    monkeypatch.setattr(open_api_service.asyncio, "wait_for", wait_for)
+    await service.run_chat_websocket(
+        raw_api_key=None,
+        receive_json=receive_json,
+        send_json=lambda payload: _append(sent, payload),
+        close=close,
+        conf_list=[],
+        chat_bridge=_bridge(),
+    )
+    assert sent == [{"type": "error", "code": "UNAUTHORIZED", "data": "Unauthorized"}]
+    assert closed == [(1008, "Unauthorized")]
 
 
 @pytest.mark.asyncio

@@ -172,7 +172,6 @@ export async function sendMessage(id: string, text: string, attachments: Attachm
   if (signal?.aborted) throw new DOMException('Cancelled', 'AbortError');
   const url = new URL(base + '/api/v1/chat/ws');
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
-  url.searchParams.set('api_key', key);
   await new Promise<void>((resolve, reject) => {
     const ws = new WebSocket(url);
     sockets.add(ws);
@@ -189,7 +188,8 @@ export async function sendMessage(id: string, text: string, attachments: Attachm
       finish(new DOMException('Cancelled', 'AbortError'));
     };
     signal?.addEventListener('abort', cancel, { once: true });
-    ws.onopen = () => ws.send(JSON.stringify({ t: 'send', username, session_id: id, message_id: crypto.randomUUID(),
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'auth', api_key: key }));
+    const sendChat = () => ws.send(JSON.stringify({ t: 'send', username, session_id: id, message_id: crypto.randomUUID(),
       ...(selection?.configId ? { config_id: selection.configId } : {}),
       ...(selection?.providerId ? { selected_provider: selection.providerId, selected_model: selection.model } : {}),
       message: [{ type: 'plain', text }, ...attachments.map(a => ({ type: a.type, attachment_id: a.id, filename: a.name }))],
@@ -198,7 +198,9 @@ export async function sendMessage(id: string, text: string, attachments: Attachm
     ws.onmessage = (message) => {
       let event;
       try { event = JSON.parse(message.data); } catch { finish(new Error('收到无法解析的回复。')); return; }
-      if (event.type === 'plain' && !['tool_call', 'tool_call_result', 'agent_stats'].includes(event.chain_type)) {
+      if (event.type === 'auth_ok') {
+        sendChat();
+      } else if (event.type === 'plain' && !['tool_call', 'tool_call_result', 'agent_stats'].includes(event.chain_type)) {
         onEvent({ type: event.chain_type === 'reasoning' ? 'reasoning' : 'text', text: String(event.data || '') });
       } else if (event.type === 'message_saved') {
         onEvent({ type: 'saved', messageId: String(event.data.id) });
