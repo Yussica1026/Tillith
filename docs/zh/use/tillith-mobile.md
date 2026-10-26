@@ -57,4 +57,4 @@ cd ..
 
 手机基础核心使用 `mobile/native-python/mobile-requirements.txt`，保留聊天、人格、SQLite、内置插件、API 与附件依赖；上游完整服务端清单仍保存在 `requirements.txt`。外部聊天平台、Docker、FAISS 知识库索引与额外文档转换需要各自的依赖，不能因为插件能安装就假定它支持 Android。该精简环境已通过真实启动、消息与附件往返，以及关闭后的数据库持久化检查。
 
-Capacitor 壳与 `mobile/native-python` 嵌入入口仍在集成。Python 核心涉及多个原生二进制依赖，需要可用于目标 Android ABI 的构建产物及实机或模拟器验证。当前没有已验收可用的 APK，桌面上的嵌入启动成功不能代替手机运行验收。
+云端 release APK 已通过固定签名验证、13 条 Android 测试以及模拟器安装启动检查。ARM64 内置版已完成 Python 依赖安装、打包和签名，并核对包内后端源码；内置核心的手机实际启动仍待验证。x86_64 内置版尚未完成原生依赖验收。桌面上的嵌入启动成功不能代替手机运行验收。
