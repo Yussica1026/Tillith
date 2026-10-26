@@ -15,7 +15,7 @@ export type McpServer = {
 
 export type McpDraft = {
   name: string; url: string; transport: 'streamable_http' | 'sse';
-  headers: Record<string, string>; active: boolean;
+  headers: Record<string, string>; clear_headers?: boolean; active: boolean;
 };
 
 export async function loadToolsWorkspace(): Promise<{ tools: ToolInfo[]; servers: McpServer[] }> {

@@ -10564,6 +10564,11 @@
             "type": "object",
             "title": "Headers"
           },
+          "clear_headers": {
+            "type": "boolean",
+            "title": "Clear Headers",
+            "default": false
+          },
           "active": {
             "type": "boolean",
             "title": "Active",

@@ -796,6 +796,7 @@ export type TillithMcpWrite = {
     headers?: {
         [key: string]: (string);
     };
+    clear_headers?: boolean;
     active?: boolean;
 };
 

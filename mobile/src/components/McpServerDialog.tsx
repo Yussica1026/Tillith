@@ -13,6 +13,7 @@ export function McpServerDialog({ server, existingNames, onClose, onSaved, onCha
   const [transport, setTransport] = useState<McpDraft['transport']>(server?.transport === 'sse' ? 'sse' : 'streamable_http');
   const [enabled, setEnabled] = useState(server?.active ?? true);
   const [headers, setHeaders] = useState<HeaderRow[]>([{ id: 0, name: '', value: '' }]);
+  const [clearHeaders, setClearHeaders] = useState(false);
   const [pending, setPending] = useState<'save' | 'test' | null>(null);
   const [error, setError] = useState('');
   const [checkedTools, setCheckedTools] = useState<string[]>();
@@ -36,7 +37,7 @@ export function McpServerDialog({ server, existingNames, onClose, onSaved, onCha
     } else if (!server) { setError('请填写远程服务地址。'); return; }
     const values: Record<string, string> = {};
     const names = new Set<string>();
-    for (const [index, row] of headers.entries()) {
+    for (const [index, row] of (clearHeaders ? [] : headers).entries()) {
       const key = row.name.trim();
       if (!key && !row.value) continue;
       if (!key || !row.value) { setError(`请补全第 ${index + 1} 行请求头，或移除这一行。`); return; }
@@ -45,7 +46,7 @@ export function McpServerDialog({ server, existingNames, onClose, onSaved, onCha
       names.add(key.toLowerCase());
       values[key] = row.value;
     }
-    return { name: trimmedName, url: address, transport, headers: values, active: enabled };
+    return { name: trimmedName, url: address, transport, headers: values, clear_headers: clearHeaders, active: enabled };
   }
 
   async function test() {
@@ -88,8 +89,10 @@ export function McpServerDialog({ server, existingNames, onClose, onSaved, onCha
       <label className="dialog-field">服务名称<input aria-label="MCP 服务名称" required maxLength={200} autoComplete="off" value={name} disabled={busy} onChange={event => setName(event.target.value)} placeholder="例如：资料检索" /></label>
       <label className="dialog-field">服务地址<input aria-label="MCP 服务地址" type={server?.url_secret ? 'password' : 'url'} inputMode="url" required={!server} autoComplete="off" spellCheck={false} value={url} disabled={busy} onChange={event => setUrl(event.target.value)} placeholder={server?.url_secret ? '地址已保存，留空保留' : 'https://example.com/mcp'} /></label>
       {server?.url_secret && <p className="tools-help">原地址含私密参数，不会回显。需要更换时填写完整地址。</p>}
+      {server && <p className="tools-help">更换地址的协议、域名或端口后，请重新填写认证请求头。</p>}
       <label className="dialog-field">连接方式<select aria-label="MCP 连接方式" value={transport} disabled={busy} onChange={event => setTransport(event.target.value as McpDraft['transport'])}><option value="streamable_http">HTTP（Streamable HTTP）</option><option value="sse">SSE</option></select></label>
-      <fieldset className="mcp-headers" disabled={busy}><legend>认证与请求头</legend><p className="tools-help">{server?.headers_present ? '已有请求头已保存。全部留空会沿用；填写新的请求头会整体替换。' : '服务需要认证时再填写，例如 Authorization 与 Bearer 令牌。'}</p>
+      {server && <label className="toggle-field"><input type="checkbox" checked={clearHeaders} disabled={busy} onChange={event => setClearHeaders(event.target.checked)} />清除请求头</label>}
+      <fieldset className="mcp-headers" disabled={busy || clearHeaders}><legend>认证与请求头</legend><p className="tools-help">{clearHeaders ? '保存时删除全部请求头；检查连接时也不发送已有请求头。' : server?.headers_present ? '同源地址下全部留空会沿用已有请求头；填写新的请求头会整体替换。' : '服务需要认证时再填写，例如 Authorization 与 Bearer 令牌。'}</p>
         {headers.map((row, index) => <div className="mcp-header-row" key={row.id}><label className="dialog-field">名称<input aria-label={`请求头名称 ${index + 1}`} autoComplete="off" spellCheck={false} value={row.name} onChange={event => setHeaders(current => current.map(item => item.id === row.id ? { ...item, name: event.target.value } : item))} placeholder="Authorization" /></label><label className="dialog-field">值<input aria-label={`请求头值 ${index + 1}`} type="password" autoComplete="new-password" spellCheck={false} value={row.value} onChange={event => setHeaders(current => current.map(item => item.id === row.id ? { ...item, value: event.target.value } : item))} placeholder="只写入，不回显" /></label><button type="button" className="icon-button" aria-label={`移除请求头 ${index + 1}`} onClick={() => { setHeaders(current => current.filter(item => item.id !== row.id)); setCheckedTools(undefined); }}><Icon name="close" size={17} /></button></div>)}
         <button type="button" className="text-button" disabled={headers.length >= 32} onClick={() => { setHeaders(current => [...current, { id: nextHeaderId.current++, name: '', value: '' }]); setCheckedTools(undefined); }}><Icon name="plus" size={15} />添加请求头</button>
       </fieldset>

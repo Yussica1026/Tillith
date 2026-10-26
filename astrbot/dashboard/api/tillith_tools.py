@@ -23,6 +23,7 @@ class TillithMcpWrite(BaseModel):
     url: str = Field(default="", max_length=8192)
     transport: Literal["streamable_http", "sse"] = "streamable_http"
     headers: dict[str, str] = Field(default_factory=dict)
+    clear_headers: StrictBool = False
     active: StrictBool = True
 
 

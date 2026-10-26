@@ -236,6 +236,93 @@ async def test_blank_edit_preserves_secrets_and_disabled_create_never_connects(c
 
 
 @pytest.mark.asyncio
+async def test_changed_origin_requires_new_headers_for_edit_and_check(client):
+    browser, manager = client
+    original = deepcopy(manager.config)
+    params = {"server_name": "team/remote"}
+    for path, method in (("by-name", "PUT"), ("test", "POST")):
+        for url in (
+            "http://example.invalid/mcp",
+            "https://other.invalid/mcp",
+            "https://example.invalid:8443/mcp",
+        ):
+            for clear_headers in (False, True):
+                response = await browser.request(
+                    method,
+                    "/tillith/mcp/servers/" + path,
+                    params=params,
+                    json=draft(
+                        name="team/remote", url=url, clear_headers=clear_headers
+                    ),
+                )
+                assert response.status_code == 400
+                assert response.json()["message"] == (
+                    "更换服务地址后请重新填写认证请求头"
+                )
+    assert manager.config == original
+    assert manager.tested == [] and manager.enabled == []
+
+    response = await browser.post(
+        "/tillith/mcp/servers/test",
+        params=params,
+        json=draft(url="https://EXAMPLE.invalid:443/other?filter=value"),
+    )
+    assert response.status_code == 200
+    assert manager.tested[-1]["headers"] == {
+        "Authorization": "Bearer fixture-header-secret"
+    }
+
+    new_headers = {"Authorization": "Bearer replacement-secret"}
+    for path, method in (("test", "POST"), ("by-name", "PUT")):
+        response = await browser.request(
+            method,
+            "/tillith/mcp/servers/" + path,
+            params=params,
+            json=draft(
+                name="team/remote",
+                url="https://other.invalid/mcp",
+                headers=new_headers,
+                active=False,
+            ),
+        )
+        assert response.status_code == 200
+    assert manager.tested[-1]["headers"] == new_headers
+    assert manager.config["mcpServers"]["team/remote"]["headers"] == new_headers
+
+
+@pytest.mark.asyncio
+async def test_clear_headers_omits_credentials_when_checking_and_removes_on_save(
+    client,
+):
+    browser, manager = client
+    original = deepcopy(manager.config)
+    params = {"server_name": "team/remote"}
+    payload = draft(name="team/remote", url="", clear_headers=True, active=False)
+    response = await browser.post(
+        "/tillith/mcp/servers/test", params=params, json=payload
+    )
+    assert response.status_code == 200
+    assert manager.tested[-1]["headers"] == {}
+    assert manager.config == original
+
+    response = await browser.put(
+        "/tillith/mcp/servers/by-name", params=params, json=payload
+    )
+    assert response.status_code == 200
+    assert not response.json()["data"]["headers_present"]
+    saved = manager.config["mcpServers"]["team/remote"]
+    assert saved["headers"] == {}
+    assert saved["url"] == original["mcpServers"]["team/remote"]["url"]
+    assert "clear_headers" not in saved
+
+    response = await browser.post(
+        "/tillith/mcp/servers/test", params=params, json=draft(url="")
+    )
+    assert response.status_code == 200
+    assert manager.tested[-1]["headers"] == {}
+
+
+@pytest.mark.asyncio
 async def test_stdio_cannot_be_created_edited_tested_or_enabled_but_can_be_stopped(
     client,
 ):

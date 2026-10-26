@@ -97,6 +97,18 @@ class TillithToolsService:
         url = draft["url"].strip() or str(old.get("url", ""))
         try:
             parsed = urlsplit(url)
+            previous = urlsplit(old.get("url", url))
+            port = parsed.port
+            previous_port = previous.port
+            if port is None:
+                port = 443 if parsed.scheme == "https" else 80
+            if previous_port is None:
+                previous_port = 443 if previous.scheme == "https" else 80
+            origin_changed = (parsed.scheme, parsed.hostname, port) != (
+                previous.scheme,
+                previous.hostname,
+                previous_port,
+            )
             valid = (
                 parsed.scheme in {"http", "https"}
                 and parsed.hostname
@@ -109,7 +121,16 @@ class TillithToolsService:
             valid = False
         if not valid:
             raise ApiError("请填写 HTTP 或 HTTPS 地址；认证信息请放在请求头中。")
-        headers = draft["headers"] or old.get("headers", {})
+        clear_headers = draft.get("clear_headers", False)
+        if (
+            old_name is not None
+            and origin_changed
+            and (not draft["headers"] or clear_headers)
+        ):
+            raise ApiError("更换服务地址后请重新填写认证请求头", 400)
+        if clear_headers and draft["headers"]:
+            raise ApiError("清除请求头时请勿同时填写新的请求头。", 400)
+        headers = {} if clear_headers else draft["headers"] or old.get("headers", {})
         for name, value in headers.items():
             if (
                 not name
