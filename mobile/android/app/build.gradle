@@ -13,7 +13,9 @@ if (providers.gradleProperty('embeddedCore').getOrElse('false') == 'true') {
         from(new File(repositoryRoot, 'runtime_bootstrap.py'))
         from(new File(repositoryRoot, 'mobile/native-python/bootstrap.py'))
     }
-    android.defaultConfig.ndk.abiFilters.addAll(['arm64-v8a', 'x86_64'])
+    android.defaultConfig.ndk.abiFilters.addAll(
+        providers.gradleProperty('embeddedAbis').getOrElse('arm64-v8a,x86_64').split(',').toList()
+    )
     chaquopy {
         defaultConfig {
             version = '3.13'
@@ -43,7 +45,7 @@ android {
         applicationId "app.tillith.privatechat"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode providers.gradleProperty('tillithVersionCode').getOrElse('1').toInteger()
         versionName "0.1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {

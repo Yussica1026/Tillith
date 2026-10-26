@@ -24,6 +24,11 @@ on:
         description: 'Optional second wheel run for image and crypto dependencies'
         type: string
         default: ''
+      embedded_abis:
+        description: 'Embedded core CPU architectures'
+        type: choice
+        options: ['arm64-v8a,x86_64', 'arm64-v8a']
+        default: 'arm64-v8a,x86_64'
 
 permissions:
   contents: read
@@ -82,10 +87,36 @@ jobs:
         env:
           BUILD_MODE: ${{ matrix.mode }}
           BUILD_EMBEDDED: ${{ inputs.embedded }}
+          EMBEDDED_ABIS: ${{ inputs.embedded_abis }}
         run: |
           if [ "$BUILD_MODE" = embedded ] && [ "$BUILD_EMBEDDED" != true ]; then exit 0; fi
           chmod +x gradlew
-          ./gradlew --no-daemon assembleDebug -PembeddedCore=$([ "$BUILD_MODE" = embedded ] && echo true || echo false)
+          ./gradlew --no-daemon assembleRelease \
+            -PembeddedCore=$([ "$BUILD_MODE" = embedded ] && echo true || echo false) \
+            -PembeddedAbis="${EMBEDDED_ABIS:-arm64-v8a,x86_64}" \
+            -PtillithVersionCode="$GITHUB_RUN_NUMBER"
+      - name: Sign and verify release with the fixed Tillith certificate
+        if: matrix.mode == 'cloud' || inputs.embedded
+        working-directory: mobile/android
+        env:
+          TILLITH_KEYSTORE_BASE64: ${{ secrets.TILLITH_ANDROID_KEYSTORE_BASE64 }}
+          TILLITH_KEYSTORE_PASSWORD: ${{ secrets.TILLITH_ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$TILLITH_KEYSTORE_BASE64"
+          test -n "$TILLITH_KEYSTORE_PASSWORD"
+          umask 077
+          keystore="$RUNNER_TEMP/tillith-release.p12"
+          trap 'rm -f "$keystore"' EXIT
+          printf '%s' "$TILLITH_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          output=app/build/outputs/apk/release
+          signer="$ANDROID_HOME/build-tools/36.0.0/apksigner"
+          "$signer" sign --ks "$keystore" --ks-type PKCS12 \
+            --ks-key-alias tillith-release --ks-pass env:TILLITH_KEYSTORE_PASSWORD \
+            --out "$output/tillith-release.apk" "$output/app-release-unsigned.apk"
+          "$signer" verify --verbose --print-certs "$output/tillith-release.apk" | tee "$output/signing-report.txt"
+          sha256sum "$output/tillith-release.apk" > "$output/apk.sha256"
+          printf '%s\n' "$GITHUB_SHA" > "$output/source-commit.txt"
       - name: Enable emulator acceleration
         if: matrix.mode == 'cloud' && inputs.smoke
         run: |
@@ -104,7 +135,17 @@ jobs:
           emulator-boot-timeout: 300
           disable-animations: true
           working-directory: mobile/android
-          script: ./gradlew --no-daemon :app:connectedDebugAndroidTest -PembeddedCore=false
+          script: |
+            ./gradlew --no-daemon :app:connectedDebugAndroidTest -PembeddedCore=false
+            adb uninstall app.tillith.privatechat
+            adb install app/build/outputs/apk/release/tillith-release.apk
+            adb shell am start -W -n app.tillith.privatechat/.MainActivity
+            sleep 5
+            adb shell pidof app.tillith.privatechat
+            adb shell uiautomator dump /sdcard/tillith-release-window.xml
+            adb pull /sdcard/tillith-release-window.xml app/build/reports/tillith-release-window.xml
+            adb shell screencap -p /sdcard/tillith-release.png
+            adb pull /sdcard/tillith-release.png app/build/reports/tillith-release.png
       - name: Save emulator test results
         if: always() && matrix.mode == 'cloud' && inputs.smoke
         uses: actions/upload-artifact@v4
@@ -113,12 +154,18 @@ jobs:
           path: |
             mobile/android/app/build/reports/androidTests/
             mobile/android/app/build/outputs/androidTest-results/
+            mobile/android/app/build/reports/tillith-release-window.xml
+            mobile/android/app/build/reports/tillith-release.png
           if-no-files-found: ignore
           retention-days: 7
       - uses: actions/upload-artifact@v4
         if: always() && steps.build.conclusion == 'success' && (matrix.mode == 'cloud' || inputs.embedded)
         with:
-          name: tillith-${{ matrix.mode }}-debug
-          path: mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          name: tillith-${{ matrix.mode }}-release
+          path: |
+            mobile/android/app/build/outputs/apk/release/tillith-release.apk
+            mobile/android/app/build/outputs/apk/release/signing-report.txt
+            mobile/android/app/build/outputs/apk/release/apk.sha256
+            mobile/android/app/build/outputs/apk/release/source-commit.txt
           if-no-files-found: error
           retention-days: 7

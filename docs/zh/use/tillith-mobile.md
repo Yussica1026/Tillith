@@ -51,6 +51,10 @@ cd ..
 
 ## Android 构建状态
 
+`Build Tillith Android` 工作流现在产出固定证书签名的 release APK。仓库 Secrets 需要配置 `TILLITH_ANDROID_KEYSTORE_BASE64`（PKCS12 文件的 Base64）和 `TILLITH_ANDROID_KEYSTORE_PASSWORD`，证书别名固定为 `tillith-release`。签名材料单独私密保存，不提交到仓库；缺少签名时构建会失败。构建制品同时包含证书校验结果、APK SHA-256 和源代码提交号。
+
+`target` 可选云端、内置或两者；内置包的 `embedded_abis` 可选 ARM64 或 ARM64/x86_64。`versionCode` 使用工作流运行编号，后续构建继续沿用同一证书。之前临时 debug 证书签名的安装包无法被新证书直接覆盖，迁移前需要保留旧应用中的数据。
+
 手机基础核心使用 `mobile/native-python/mobile-requirements.txt`，保留聊天、人格、SQLite、内置插件、API 与附件依赖；上游完整服务端清单仍保存在 `requirements.txt`。外部聊天平台、Docker、FAISS 知识库索引与额外文档转换需要各自的依赖，不能因为插件能安装就假定它支持 Android。该精简环境已通过真实启动、消息与附件往返，以及关闭后的数据库持久化检查。
 
 Capacitor 壳与 `mobile/native-python` 嵌入入口仍在集成。Python 核心涉及多个原生二进制依赖，需要可用于目标 Android ABI 的构建产物及实机或模拟器验证。当前没有已验收可用的 APK，桌面上的嵌入启动成功不能代替手机运行验收。
