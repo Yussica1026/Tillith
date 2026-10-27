@@ -19,6 +19,7 @@ export type CoreStatus = { available: boolean; running: boolean; message: string
 export type ChatSelection = { configId: string; providerId: string; model: string; streaming?: boolean };
 export type SessionMeta = { session_id: string; creator: string; pinned: boolean; starred: boolean; archived: boolean; updated_at: string | null };
 export type SearchMatch = { message_id: string; session_id: string; session_title: string; role: 'user' | 'assistant'; text: string; created_at: string };
+export type Favorite = { id: string; message_id: string; session_id: string; session_title: string; persona_id?: string | null; role: 'user' | 'assistant'; text: string; attachments: Attachment[]; created_at: string };
 export type ChatOptions = { configs: { id: string; name: string }[]; providers: { id: string; name: string; model: string }[]; default_config_id: string };
 export type StreamEvent = { type: 'text' | 'reasoning' | 'saved' | 'user_saved' | 'complete' | 'attachment' | 'error' | 'snapshot' | 'usage' | 'run'; text?: string; attachment?: Attachment; messageId?: string; checkpointId?: string; message?: Message; usage?: Usage; runId?: string; code?: string };
 
@@ -214,6 +215,20 @@ export async function updateSessionMeta(id: string, patch: Partial<Pick<SessionM
 }
 export async function searchMessages(query: string, role?: string, page = 1): Promise<{ items: SearchMatch[]; has_more: boolean }> {
   return request('/tillith/search?' + new URLSearchParams({ q: query, ...(role ? { role } : {}), page: String(page), page_size: '20' }));
+}
+export async function listFavorites(query = ''): Promise<Favorite[]> {
+  const items: Favorite[] = [];
+  for (let page = 1; ; page++) {
+    const data = await request('/tillith/favorites?' + new URLSearchParams({ ...(query.trim() ? { q: query.trim() } : {}), page: String(page), page_size: '100' }));
+    items.push(...(Array.isArray(data?.items) ? data.items : []));
+    if (!data?.has_more) return items;
+  }
+}
+export async function createFavorite(sessionId: string, messageId: string): Promise<Favorite> {
+  return request('/tillith/favorites', { method: 'POST', body: JSON.stringify({ session_id: sessionId, message_id: messageId }) });
+}
+export async function deleteFavorite(id: string): Promise<void> {
+  await request('/tillith/favorites/' + encodeURIComponent(id), { method: 'DELETE' });
 }
 export async function listChatOptions(configId?: string): Promise<ChatOptions> {
   return request('/tillith/chat-options' + (configId ? '?' + new URLSearchParams({ config_id: configId }) : ''));

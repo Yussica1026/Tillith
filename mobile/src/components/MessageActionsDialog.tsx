@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { Message } from '../lib/api';
 import { Dialog } from './Dialog';
 
-export type MessageAction = 'edit' | 'regenerate' | 'versions' | 'branch' | 'delete' | 'memory';
+export type MessageAction = 'edit' | 'regenerate' | 'versions' | 'branch' | 'delete' | 'memory' | 'favorite';
 
 export function MessageActionsDialog({ message, latest, canRetry, busy, onClose, onAction }: { message: Message; latest: boolean; canRetry?: boolean; busy: boolean; onClose: () => void; onAction: (action: MessageAction, text?: string) => void }) {
   const [step, setStep] = useState<'menu' | 'edit' | 'delete'>('menu');
@@ -13,6 +13,7 @@ export function MessageActionsDialog({ message, latest, canRetry, busy, onClose,
       {message.role === 'user' ? <button type="button" disabled={busy || !available || !latest} onClick={() => setStep('edit')}>修改并重新回答</button> : <button type="button" disabled={busy || (!available && !canRetry) || !latest} onClick={() => onAction('regenerate')}>重新回答</button>}
       <button type="button" disabled={busy || !available} onClick={() => onAction('versions')}>查看这一轮的版本</button>
       <button type="button" disabled={busy || !available} onClick={() => onAction('branch')}>从这一轮创建分支</button>
+      {message.saved && (!!message.text.trim() || !!message.attachments?.length) && <button type="button" disabled={busy} onClick={() => onAction('favorite')}>珍藏这条消息</button>}
       <button type="button" disabled={busy || !message.saved || !message.text.trim()} onClick={() => onAction('memory')}>记为记忆</button>
       <button type="button" className="danger-text" disabled={busy || !available} onClick={() => setStep('delete')}>删除这一轮</button>
     </div>{!available ? <p className="field-help">这条消息没有可用的上下文记录。更新前产生的旧消息仍可阅读和复制。</p> : !latest && <p className="field-help">修改和重答用于最后一轮。要继续较早的内容，可先创建分支。</p>}</>}

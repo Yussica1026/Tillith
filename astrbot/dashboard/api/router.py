@@ -30,6 +30,7 @@ from .subagents import router as subagents_router
 from .t2i import router as t2i_router
 from .tillith import router as tillith_router
 from .tillith_context import router as tillith_context_router
+from .tillith_favorites import router as tillith_favorites_router
 from .tillith_messages import router as tillith_messages_router
 from .tillith_providers import router as tillith_providers_router
 from .tillith_tools import router as tillith_tools_router
@@ -70,6 +71,7 @@ def build_api_router() -> APIRouter:
         live_chat_router,
         tillith_router,
         tillith_context_router,
+        tillith_favorites_router,
         tillith_messages_router,
         tillith_providers_router,
         tillith_tools_router,
