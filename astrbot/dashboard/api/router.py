@@ -33,6 +33,7 @@ from .tillith_context import router as tillith_context_router
 from .tillith_favorites import router as tillith_favorites_router
 from .tillith_messages import router as tillith_messages_router
 from .tillith_providers import router as tillith_providers_router
+from .tillith_tool_audit import router as tillith_tool_audit_router
 from .tillith_tools import router as tillith_tools_router
 from .tools import router as tools_router
 from .updates import router as updates_router
@@ -74,6 +75,7 @@ def build_api_router() -> APIRouter:
         tillith_favorites_router,
         tillith_messages_router,
         tillith_providers_router,
+        tillith_tool_audit_router,
         tillith_tools_router,
     )
     for child_router in child_routers:

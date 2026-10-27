@@ -38,6 +38,7 @@ from astrbot.dashboard.services.chunked_upload_service import (
     ChunkedUploadError,
     ChunkedUploadService,
 )
+from astrbot.dashboard.services.tillith_tool_audit import get_tool_audit_service
 
 SSE_HEARTBEAT = ": heartbeat\n\n"
 CHAT_RUN_SUBSCRIBER_QUEUE_SIZE = 256
@@ -1082,6 +1083,7 @@ class ChatService:
         display_accumulator = BotMessageAccumulator()
         pending_agent_stats = {}
         pending_refs = {}
+        pending_tool_audits: dict[str, dict] = {}
 
         async def flush_pending_bot_message():
             nonlocal pending_accumulator, pending_agent_stats, pending_refs
@@ -1134,6 +1136,60 @@ class ChatService:
                 msg_type = result.get("type")
                 streaming = result.get("streaming", False)
                 chain_type = result.get("chain_type")
+
+                # These JSON frames are emitted only by the core tool runner. Keep
+                # proposed calls in memory and persist only after a paired result,
+                # so model-authored text and interrupted proposals are never audited.
+                if msg_type == "plain" and chain_type == "tool_call":
+                    try:
+                        tool_call = json.loads(result_text)
+                    except (TypeError, json.JSONDecodeError):
+                        tool_call = None
+                    if isinstance(tool_call, dict):
+                        call_id = tool_call.get("id")
+                        tool_name = tool_call.get("name")
+                        if (
+                            isinstance(call_id, str)
+                            and call_id
+                            and isinstance(tool_name, str)
+                            and tool_name
+                        ):
+                            pending_tool_audits[call_id] = tool_call
+                elif msg_type == "plain" and chain_type == "tool_call_result":
+                    try:
+                        tool_result = json.loads(result_text)
+                    except (TypeError, json.JSONDecodeError):
+                        tool_result = None
+                    if isinstance(tool_result, dict):
+                        call_id = tool_result.get("id")
+                        pending = (
+                            pending_tool_audits.pop(call_id, None)
+                            if isinstance(call_id, str)
+                            else None
+                        )
+                        if pending is not None:
+                            try:
+                                await get_tool_audit_service(
+                                    self.db
+                                ).record_completed(
+                                    creator=run.username,
+                                    session_id=run.session_id,
+                                    platform_id=run.platform_history_id,
+                                    checkpoint_id=run.llm_checkpoint_id,
+                                    run_id=run.run_id,
+                                    call_id=call_id,
+                                    tool=pending["name"],
+                                    args=pending.get("args"),
+                                    result=tool_result.get("result", ""),
+                                    created_at=pending.get("ts"),
+                                )
+                            except Exception as exc:
+                                # Audit is secondary evidence and must never break a
+                                # user's active response.
+                                logger.exception(
+                                    f"Failed to record Tillith tool audit: {exc}",
+                                    exc_info=True,
+                                )
 
                 if chain_type == "agent_stats":
                     try:
