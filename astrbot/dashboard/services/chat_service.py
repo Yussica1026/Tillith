@@ -42,6 +42,8 @@ from astrbot.dashboard.services.tillith_tool_audit import get_tool_audit_service
 
 SSE_HEARTBEAT = ": heartbeat\n\n"
 CHAT_RUN_SUBSCRIBER_QUEUE_SIZE = 256
+CHAT_STOP_REGISTRATION_RETRIES = 20
+CHAT_STOP_REGISTRATION_INTERVAL_SECONDS = 0.05
 # Uploaded chat attachments larger than this are rejected.
 MAX_UPLOAD_FILE_SIZE_MB = 512
 MAX_UPLOAD_FILE_SIZE_BYTES = MAX_UPLOAD_FILE_SIZE_MB * 1024 * 1024
@@ -1446,6 +1448,20 @@ class ChatService:
 
         unified_msg_origin = build_webchat_unified_msg_origin(session)
         stopped_count = active_event_registry.request_agent_stop_all(unified_msg_origin)
+        # A run is registered before EventBus creates its active event. A stop sent in
+        # that short window used to return zero and then leave the generation running.
+        # Retry only while this service still owns an active run, and keep the wait
+        # bounded so an absent or already-finished event never blocks indefinitely.
+        if stopped_count == 0 and self.chat_runs_by_session.get(session_id):
+            for _ in range(CHAT_STOP_REGISTRATION_RETRIES):
+                await asyncio.sleep(CHAT_STOP_REGISTRATION_INTERVAL_SECONDS)
+                if not self.chat_runs_by_session.get(session_id):
+                    break
+                stopped_count = active_event_registry.request_agent_stop_all(
+                    unified_msg_origin
+                )
+                if stopped_count:
+                    break
         return {"stopped_count": stopped_count}
 
     async def stop_session_from_dashboard_payload(
