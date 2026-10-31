@@ -28,17 +28,17 @@ jobs:
         package: ${{ fromJSON(inputs.package == 'rust' && '["pydantic-core","jiter"]' || inputs.package == 'native' && '["pillow","cryptography"]' || inputs.package == 'pillow' && '["pillow"]' || inputs.package == 'cryptography' && '["cryptography"]' || '["pydantic-core","jiter","pillow","cryptography"]') }}
         abi: ${{ fromJSON(inputs.abi == 'arm64_v8a' && '["arm64_v8a"]' || inputs.abi == 'x86_64' && '["x86_64"]' || '["arm64_v8a","x86_64"]') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
           log-accepted-android-sdk-licenses: false
@@ -57,7 +57,7 @@ jobs:
             --package "$WHEEL_PACKAGE" --abi "$WHEEL_ABI" \
             --work-dir "$RUNNER_TEMP/tillith-wheel-work" \
             --output-dir "$RUNNER_TEMP/tillith-wheel-artifact"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tillith-cp313-android24-${{ matrix.package }}-${{ matrix.abi }}
           path: ${{ runner.temp }}/tillith-wheel-artifact/
@@ -68,10 +68,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
       - name: Build and verify platform-independent source packages
@@ -81,7 +81,7 @@ jobs:
             --package jieba --abi arm64_v8a \
             --work-dir "$RUNNER_TEMP/tillith-pure-work" \
             --output-dir "$RUNNER_TEMP/tillith-pure-artifact"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: tillith-py3-none-any
           path: ${{ runner.temp }}/tillith-pure-artifact/
