@@ -38,20 +38,20 @@ jobs:
       matrix:
         mode: ${{ fromJSON(inputs.target == 'embedded' && '["embedded"]' || inputs.target == 'cloud' && '["cloud"]' || '["cloud", "embedded"]') }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: npm
           cache-dependency-path: mobile/package-lock.json
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.13'
-      - uses: android-actions/setup-android@v3
+      - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
           log-accepted-android-sdk-licenses: false
@@ -60,7 +60,7 @@ jobs:
         run: npm ci && npm run android:sync
       - name: Download verified Android Python wheels
         if: matrix.mode == 'embedded' && inputs.embedded && inputs.wheel_run_id != ''
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ inputs.wheel_run_id }}
@@ -69,7 +69,7 @@ jobs:
           path: mobile/native-python/wheels
       - name: Download additional Android Python wheels
         if: matrix.mode == 'embedded' && inputs.embedded && inputs.extra_wheel_run_id != ''
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ inputs.extra_wheel_run_id }}
@@ -107,7 +107,7 @@ jobs:
           script: ./gradlew --no-daemon :app:connectedDebugAndroidTest -PembeddedCore=false
       - name: Save emulator test results
         if: always() && matrix.mode == 'cloud' && inputs.smoke
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tillith-android-smoke
           path: |
@@ -115,7 +115,7 @@ jobs:
             mobile/android/app/build/outputs/androidTest-results/
           if-no-files-found: ignore
           retention-days: 7
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always() && steps.build.conclusion == 'success' && (matrix.mode == 'cloud' || inputs.embedded)
         with:
           name: tillith-${{ matrix.mode }}-debug
