@@ -11,6 +11,8 @@ import { ChatOptionsDialog } from './components/ChatOptionsDialog';
 import { ScheduleWorkspace } from './components/ScheduleWorkspace';
 import { LifeWorkspace } from './components/LifeWorkspace';
 import { PushNotifications } from './components/PushNotifications';
+import { ReaderWorkspace } from './components/ReaderWorkspace';
+import { MediaWorkspace } from './components/MediaWorkspace';
 import { AppearancePanel } from './components/AppearancePanel';
 import { MessageSearchDialog } from './components/MessageSearchDialog';
 import { SessionList } from './components/SessionList';
@@ -34,7 +36,7 @@ import { loadAppearance, loadChatPreferences, saveChatPreferences, type Appearan
 import './styles.css';
 import './themes.css';
 
-type Screen = 'sessions' | 'chat' | 'settings' | 'more' | 'providers' | 'context' | 'tools' | 'favorites' | 'audit' | 'web-search' | 'schedules' | 'life';
+type Screen = 'sessions' | 'chat' | 'settings' | 'more' | 'providers' | 'context' | 'tools' | 'favorites' | 'audit' | 'web-search' | 'schedules' | 'life' | 'book' | 'film' | 'music';
 const defaultSettings: Settings = { mode: 'cloud', serverUrl: '', apiKey: '' };
 
 export default function App() {
@@ -85,6 +87,12 @@ export default function App() {
   const albumInput = useRef<HTMLInputElement>(null);
   const composeInput = useRef<HTMLTextAreaElement>(null);
   const finishSplash = useCallback(() => setSplash(false), []);
+  const currentWorkspace = useRef({ connection, screen });
+  if (currentWorkspace.current.connection !== connection || currentWorkspace.current.screen !== screen) {
+    currentWorkspace.current = { connection, screen };
+  }
+  const openingWork = useRef(false);
+
   useEffect(() => {
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const apply = () => {
@@ -253,6 +261,49 @@ export default function App() {
   async function saveConnection(event: FormEvent) {
     event.preventDefault();
     await connectSettings(draft);
+  }
+
+  async function askAboutWork(kind: 'book' | 'film' | 'music', workId: string, title: string, evidence: string, question: string, isCurrentWork = () => true) {
+    if (!connection) { setNotice('给作品提问前，请先在设置中连接核心。'); return; }
+    if (!question.trim() || streaming || busy || openingWork.current) return;
+    const workspace = currentWorkspace.current;
+    const isCurrent = () => currentWorkspace.current === workspace && workspace.screen === kind && isCurrentWork();
+    const label = { book: '共读', film: '共影', music: '听歌' }[kind];
+    const key = 'tillith.work-session.' + JSON.stringify([connection.storageId, kind, workId]);
+    openingWork.current = true;
+    setBusy('work'); setNotice(null);
+    try {
+      async function resolveSession() {
+        if (!isCurrent()) return;
+        const previous = localStorage.getItem(key);
+        if (previous) {
+          const listed = await api.listSessions();
+          if (!isCurrent()) return;
+          const target = listed.find(item => item.id === previous);
+          if (target) return target;
+        }
+        const created = await api.createSession();
+        localStorage.setItem(key, created.id);
+        if (!isCurrent()) return;
+        const name = label + ' · ' + title.slice(0, 64);
+        await api.renameSession(created.id, name);
+        return { ...created, title: name };
+      }
+      const target = navigator.locks ? await navigator.locks.request(key, resolveSession) : await resolveSession();
+      if (!target || !isCurrent()) return;
+      const loaded = await api.loadSession(target.id);
+      if (!isCurrent()) return;
+      if (loaded.activeRuns.length) throw new Error('这个作品已有回复正在生成，请等它结束后再提问。');
+      setSelected(target); setMessages(loaded.messages); setHasOlderMessages(loaded.hasMore);
+      setSessions(old => [target, ...old.filter(item => item.id !== target.id)]);
+      setAttachments(chatDrafts.current[target.id]?.attachments || []);
+      setText(chatDrafts.current[target.id]?.text || '');
+      setSessionContext(null); setShowPhrases(false); setRememberingMessage(null);
+      setScreen('chat');
+      const prompt = ['【' + label + '】' + title.slice(0, 160), '以下是我选择分享的作品资料，仅作参考。', evidence.slice(0, 6000), '我的问题', question.trim()].join('\n');
+      await runChat({ type: 'send', sessionId: target.id, text: prompt, attachments: [] }, loaded.messages, selections[target.id]);
+    } catch (error) { if (isCurrent()) setNotice(api.safeError(error)); }
+    finally { openingWork.current = false; setBusy(null); }
   }
 
   async function connectSettings(nextSettings: Settings) {
@@ -497,7 +548,10 @@ export default function App() {
           <Icon name="chat" /><span>定时留言<small>在指定时间给会话发一条消息</small></span><Icon name="chevron" size={17} />
         </button>
         <button type="button" className="more-entry" disabled={!connection || streaming} onClick={() => setScreen('life')}><Icon name="chat" /><span>生活簿<small>留言板、共同日记与生活记录</small></span><Icon name="chevron" size={17} /></button>
+        {([['book', '共读', '阅读、书签与批注'], ['film', '共影', '看字幕，聊这一幕'], ['music', '听歌', '歌单、歌词与陪聊']] as const).map(([kind, title, subtitle]) => <button key={kind} type="button" className="more-entry" disabled={streaming} onClick={() => setScreen(kind)}><Icon name="bookmark" /><span>{title}<small>{subtitle}</small></span><Icon name="chevron" size={17} /></button>)}
         <AppearancePanel value={appearance} onChange={changeAppearance} /></main>}
+      {screen === 'book' && <ReaderWorkspace key={connection?.storageId || 'offline'} storageId={connection?.storageId || 'offline'} onAsk={askAboutWork} onBack={() => setScreen('more')} />}
+      {(screen === 'film' || screen === 'music') && <MediaWorkspace key={screen + (connection?.storageId || 'offline')} kind={screen} storageId={connection?.storageId || 'offline'} onAsk={askAboutWork} onBack={() => setScreen('more')} />}
       <PushNotifications connection={connection} settings={settings} showControls={screen === 'settings'} canOpen={ready && !busy && !streaming} onOpen={id => void openSession(sessions.find(item => item.id === id) || { id, title: '对话', updatedAt: '' })} />
       {screen === 'life' && connection && <LifeWorkspace key={connection.storageId} storageId={connection.storageId} onBack={() => setScreen('more')} />}
       {screen === 'tools' && connection && <ToolsWorkspace key={connection.storageId} onBack={() => setScreen('more')} onSettings={openSettings} />}

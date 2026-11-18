@@ -99,6 +99,12 @@ Under **More → Life**, each persona has a message board, replies, journals, an
 
 Android push requires configuration for the same Firebase project on both ends. Supply an untracked `mobile/android/app/google-services.json` for the Android client and point `TILLITH_FCM_SERVICE_ACCOUNT_FILE` at the server's service account file. Enroll or revoke the phone under **Settings → Lock-screen notifications** after connecting to the cloud core. A notification opens the matching conversation and contains no message body. Background delivery on Huawei requires on-device verification.
 
+## Reading, films, and music
+
+Open a work from **More**. The reader supports TXT, Markdown and PDFs with a text layer, and saves reading position, bookmarks and annotations. Scanned documents without extractable text show a notice. Books are limited to 16 MiB and two million characters. PDFs are limited to 1,000 pages.
+
+Play local videos or direct media URLs with SRT/VTT subtitles. Local music playlists support LRC lyrics, progress and automatic advance. Each work has a dedicated chat. Asking about a page shares the selected text. Asking about a film or song shares the title, playback position and already displayed cues. Source media stays on the device. Reading and playback also work while disconnected, in a local library separate from the signed-in library.
+
 ## Android build status
 
 The base mobile core uses `mobile/native-python/mobile-requirements.txt` for chat, personas, SQLite, built-in plugins, APIs, and attachments. The complete upstream server requirements remain in `requirements.txt`. External messaging platforms, Docker, FAISS indexing, and additional document converters require their own dependencies; installing a plugin does not establish Android compatibility. A fresh environment with this profile has passed real startup, message and attachment roundtrips, and database persistence after shutdown.

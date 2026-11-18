@@ -1,0 +1,12 @@
+.reader-workspace .page-heading h1 { margin-top: 12px; }
+.reader-import input[type=file] { width: 100%; font-size: 12px; }
+.reader-paper { margin-top: 24px; padding: clamp(16px, 4vw, 32px); border: 1px solid var(--line); border-inline-start: 3px solid var(--blue-light); border-radius: 10px; background: var(--paper); }
+.reader-paper h2 { color: var(--ink); margin: 0 0 8px; font: 600 20px Georgia, "Songti SC", serif; overflow-wrap: anywhere; }
+.reader-paper small, .reader-marks summary { color: var(--muted); font-size: 12px; }
+.reader-body { margin: 20px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.95; font: var(--message-font-size)/1.95 Georgia, "Songti SC", serif; }
+.reader-nav { justify-content: space-between; }
+.reader-marks { margin-top: 12px; }
+.reader-marks summary { cursor: pointer; }
+.reader-marks > div, .reader-question { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 12px; }
+.reader-marks p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; line-height: 1.8; }
+.reader-question .primary-button { margin-top: 10px; }

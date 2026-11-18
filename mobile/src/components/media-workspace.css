@@ -1,0 +1,30 @@
+.media-workspace .page-heading { margin-bottom: 18px; }
+.media-workspace .page-heading .text-button { margin-left: -5px; }
+.media-workspace details summary { cursor: pointer; color: var(--accent); padding: 9px 0; font-size: 13px; }
+.media-workspace details form, .media-ask { display: grid; gap: 10px; }
+.media-workspace label:not(.media-file) { display: grid; gap: 6px; font-size: 13px; color: var(--ink); }
+.media-workspace input:not([type=file]), .media-workspace select, .media-workspace textarea {
+  min-width: 0; max-width: 100%; box-sizing: border-box; padding: 9px 10px;
+  background: var(--paper); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; font: inherit;
+}
+.media-workspace textarea { width: 100%; resize: vertical; }
+.media-playlists, .media-select, .media-imports, .media-transport, .media-script header {
+  display: flex; align-items: center; gap: 8px 15px; flex-wrap: wrap;
+}
+.media-playlists, .media-select, .media-imports { margin-bottom: 16px; }
+.media-select label, .media-playlists label { flex: 1; min-width: 130px; }
+.media-file { position: relative; overflow: hidden; cursor: pointer; }
+.media-file input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.media-file:focus-within { outline: 2px solid var(--accent); outline-offset: 3px; }
+.media-player video, .media-player audio { display: block; width: 100%; }
+.media-player video { aspect-ratio: 16 / 9; background: #17212a; object-fit: contain; border-radius: 12px; }
+.media-transport, .media-script header { justify-content: space-between; }
+.media-transport span, .media-hint { font-size: 12px; line-height: 1.65; color: var(--muted); }
+.media-script { margin: 18px 0; border-block: 1px solid var(--line); padding: 12px 0 15px; }
+.media-script h2 { font-size: 16px; margin: 0; }
+.media-script ol { list-style: none; margin: 10px 0 0; padding: 0; }
+.media-script li { display: grid; grid-template-columns: 4.5em 1fr; gap: 9px; padding: 4px 8px; font-size: 13px; color: var(--muted); }
+.media-script li.is-current { color: var(--ink); background: var(--blue-wash); border-radius: 5px; }
+.media-script time { font-variant-numeric: tabular-nums; color: var(--accent); font-size: 11px; line-height: 1.8; }
+.media-script li span { overflow-wrap: anywhere; white-space: pre-wrap; }
+.media-ask .primary-button, .media-imports details button { justify-self: start; }

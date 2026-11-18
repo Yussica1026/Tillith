@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(TillithCorePlugin.class);
         registerPlugin(TillithFilesPlugin.class);
         registerPlugin(TillithPushPlugin.class);
+        registerPlugin(TillithMediaPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

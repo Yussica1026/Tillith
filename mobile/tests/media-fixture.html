@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<div id="root"></div><script type="module">
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { MediaWorkspace } from '../src/components/MediaWorkspace';
+import '../src/styles.css';
+const params = new URLSearchParams(location.search);
+window.questions = [];
+window.actions = {};
+if ('mediaSession' in navigator) {
+  const install = navigator.mediaSession.setActionHandler.bind(navigator.mediaSession);
+  navigator.mediaSession.setActionHandler = (name, fn) => {
+    install(name, fn);
+    if (fn) window.actions[name] = fn; else delete window.actions[name];
+  };
+}
+createRoot(document.querySelector('#root')).render(React.createElement(MediaWorkspace, {
+  storageId: params.get('account') || 'synthetic', kind: params.get('kind') || 'film',
+  onBack() {}, async onAsk(...args) { window.questions.push(args); }
+}));
+</script></html>
