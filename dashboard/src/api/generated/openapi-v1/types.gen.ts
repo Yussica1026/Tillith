@@ -310,6 +310,28 @@ export type EnabledPatch = {
     enabled: boolean;
 };
 
+/**
+ * Supply at least one non-null field. Only visibility can be edited for AI-authored entries. Shared diaries cannot be marked private on the server.
+ */
+export type EntryPatch = {
+    text?: string;
+    day?: string;
+    ai_visible?: boolean;
+};
+
+/**
+ * Create an owned entry. Shared diary entries must set ai_visible to true. Replies may only target a root board post for the same owner and persona. Private diaries stay on the device.
+ */
+export type EntryWrite = {
+    category: 'board' | 'diary' | 'expense' | 'diet' | 'cycle' | 'daily' | 'memo' | 'anniversary';
+    text: string;
+    day: string;
+    ai_visible?: boolean;
+    parent_id?: (string | null);
+};
+
+export type category = 'board' | 'diary' | 'expense' | 'diet' | 'cycle' | 'daily' | 'memo' | 'anniversary';
+
 export type ErrorEnvelope = {
     status: "error";
     message: string;
@@ -659,6 +681,20 @@ export type backend = 'bubblewrap' | 'seatbelt';
  */
 export type status = 'detected' | 'missing' | 'unavailable' | 'unsupported';
 
+/**
+ * Exactly one of at (a future date with a UTC offset) and daily (local time in the IANA timezone) must be supplied.
+ */
+export type ScheduleInput = {
+    session_id: string;
+    kind: 'message' | 'wake';
+    note: string;
+    at?: (string | null);
+    daily?: (string | null);
+    timezone?: string;
+};
+
+export type kind = 'message' | 'wake';
+
 export type SessionGroupRequest = {
     name?: string;
     umos?: Array<(string)>;
@@ -762,6 +798,25 @@ export type TillithContextSuccessEnvelope = {
     message?: (string) | null;
     data: unknown;
 };
+
+export type TillithDeviceEnrollment = {
+    device_id: string;
+    token: string;
+    owner: string;
+};
+
+export type TillithLifeEntry = {
+    id: string;
+    category: 'board' | 'diary' | 'expense' | 'diet' | 'cycle' | 'daily' | 'memo' | 'anniversary';
+    text: string;
+    day: string;
+    ai_visible: boolean;
+    parent_id: (string | null);
+    author: 'user' | 'ai';
+    created_at: string;
+};
+
+export type author = 'user' | 'ai';
 
 export type TillithMcpServerList = {
     persona_tool_bindings: true;
@@ -905,6 +960,17 @@ export type TillithPublicProviderConfig = {
      */
     secret_fields_present: Array<(string)>;
     [key: string]: unknown | string;
+};
+
+export type TillithScheduleView = {
+    id: string;
+    session_id: string;
+    note: string;
+    kind: 'message' | 'wake';
+    at: (string | null);
+    daily: (string | null);
+    timezone: string;
+    enabled: boolean;
 };
 
 export type TillithSearchHit = {
@@ -1107,6 +1173,138 @@ export type UpdateRequest = {
     reboot?: boolean;
     progress_id?: string;
 };
+
+export type RegisterApiV1TillithDevicesPostData = {
+    body: TillithDeviceEnrollment;
+};
+
+export type RegisterApiV1TillithDevicesPostResponse = ({
+    status: "ok";
+    message?: (string) | null;
+    data: {
+        registered: true;
+    };
+});
+
+export type RegisterApiV1TillithDevicesPostError = (ErrorEnvelope);
+
+export type RevokeApiV1TillithDevicesDeviceIdDeleteData = {
+    path: {
+        device_id: string;
+    };
+};
+
+export type RevokeApiV1TillithDevicesDeviceIdDeleteResponse = ({
+    status: "ok";
+    message?: (string) | null;
+    data: {
+        [key: string]: unknown;
+    };
+});
+
+export type RevokeApiV1TillithDevicesDeviceIdDeleteError = (ErrorEnvelope);
+
+export type ListSchedulesApiV1TillithSchedulesGetResponse = ({
+    status: "ok";
+    message?: (string) | null;
+    data: {
+        items: Array<TillithScheduleView>;
+    };
+});
+
+export type ListSchedulesApiV1TillithSchedulesGetError = (ErrorEnvelope);
+
+export type AddScheduleApiV1TillithSchedulesPostData = {
+    body: ScheduleInput;
+};
+
+export type AddScheduleApiV1TillithSchedulesPostResponse = ({
+    status: "ok";
+    message?: (string) | null;
+    data: TillithScheduleView;
+});
+
+export type AddScheduleApiV1TillithSchedulesPostError = (ErrorEnvelope);
+
+export type DeleteScheduleApiV1TillithSchedulesJobIdDeleteData = {
+    path: {
+        job_id: string;
+    };
+};
+
+export type DeleteScheduleApiV1TillithSchedulesJobIdDeleteResponse = ({
+    status: "ok";
+    message?: (string) | null;
+    data: {
+        [key: string]: unknown;
+    };
+});
+
+export type DeleteScheduleApiV1TillithSchedulesJobIdDeleteError = (ErrorEnvelope);
+
+export type ListEntriesApiV1TillithLifePersonaIdEntriesGetData = {
+    path: {
+        persona_id: string;
+    };
+};
+
+export type ListEntriesApiV1TillithLifePersonaIdEntriesGetResponse = ({
+    status: "ok";
+    message?: (string) | null;
+    data: {
+        items: Array<TillithLifeEntry>;
+    };
+});
+
+export type ListEntriesApiV1TillithLifePersonaIdEntriesGetError = (ErrorEnvelope);
+
+export type CreateEntryApiV1TillithLifePersonaIdEntriesPostData = {
+    body: EntryWrite;
+    path: {
+        persona_id: string;
+    };
+};
+
+export type CreateEntryApiV1TillithLifePersonaIdEntriesPostResponse = ({
+    status: "ok";
+    message?: (string) | null;
+    data: TillithLifeEntry;
+});
+
+export type CreateEntryApiV1TillithLifePersonaIdEntriesPostError = (ErrorEnvelope);
+
+export type UpdateEntryApiV1TillithLifePersonaIdEntriesEntryIdPatchData = {
+    body: EntryPatch;
+    path: {
+        entry_id: string;
+        persona_id: string;
+    };
+};
+
+export type UpdateEntryApiV1TillithLifePersonaIdEntriesEntryIdPatchResponse = ({
+    status: "ok";
+    message?: (string) | null;
+    data: TillithLifeEntry;
+});
+
+export type UpdateEntryApiV1TillithLifePersonaIdEntriesEntryIdPatchError = (ErrorEnvelope);
+
+export type DeleteEntryApiV1TillithLifePersonaIdEntriesEntryIdDeleteData = {
+    path: {
+        entry_id: string;
+        persona_id: string;
+    };
+};
+
+export type DeleteEntryApiV1TillithLifePersonaIdEntriesEntryIdDeleteResponse = ({
+    status: "ok";
+    message?: (string) | null;
+    data: {
+        [key: string]: unknown;
+    };
+});
+
+export type DeleteEntryApiV1TillithLifePersonaIdEntriesEntryIdDeleteError = (ErrorEnvelope);
 
 export type ListToolsApiV1TillithToolsGetResponse = (TillithToolsResponse_TillithToolList_);
 

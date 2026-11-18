@@ -391,6 +391,54 @@ class CronJobManager:
 
     async def _run_active_agent_job(self, job: CronJob, start_time: datetime) -> None:
         payload = job.payload or {}
+        if payload.get("origin") == "tillith":
+            from astrbot.core.message.message_event_result import MessageChain
+            from astrbot.dashboard.services.chat_service import (
+                build_webchat_unified_msg_origin,
+            )
+            from astrbot.dashboard.services.tillith_context import get_context_service
+
+            session = await self.db.get_platform_session_by_id(payload["session_id"])
+            if (
+                not session
+                or session.platform_id != "webchat"
+                or session.creator != payload["owner"]
+                or build_webchat_unified_msg_origin(session) != payload["session"]
+            ):
+                return
+            binding = await get_context_service(self.db).context(
+                session.creator, session.session_id
+            )
+            if binding["persona_id"] != payload["persona_id"]:
+                return
+            text = payload["note"]
+            if payload["kind"] == "wake":
+                provider = await self.ctx.get_using_provider_async(payload["session"])
+                if provider is None:
+                    raise RuntimeError("Scheduled model is unavailable")
+                try:
+                    reply = await provider.text_chat(
+                        prompt=text, contexts=[], func_tool=None
+                    )
+                except Exception:
+                    raise RuntimeError("Scheduled model request failed") from None
+                text = reply.completion_text
+                if not text or not text.strip():
+                    raise RuntimeError("Scheduled model returned no text")
+                current = await get_context_service(self.db).context(
+                    session.creator, session.session_id
+                )
+                if current["persona_id"] != payload["persona_id"]:
+                    return
+                scheduled = await self.db.get_cron_job(job.job_id)
+                if not scheduled or not scheduled.enabled:
+                    return
+            sent = await self.ctx.send_message(
+                payload["session"], MessageChain().message(text)
+            )
+            if not sent:
+                raise RuntimeError("Webchat delivery unavailable")
+            return
         delivery_session_str = str(payload.get("session") or "").strip()
         session_str = delivery_session_str or str(
             MessageSession(

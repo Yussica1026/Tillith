@@ -183,6 +183,12 @@ outline: deep
 | `POST` | `/api/v1/chat/threads/{thread_id}/messages` | — |
 | `GET` | `/api/v1/chat/ws` | `chat:admin` |
 | `GET` | `/api/v1/tillith/chat-options` | — |
+| `POST` | `/api/v1/tillith/devices` | — |
+| `DELETE` | `/api/v1/tillith/devices/{device_id}` | — |
+| `GET` | `/api/v1/tillith/life/{persona_id}/entries` | — |
+| `POST` | `/api/v1/tillith/life/{persona_id}/entries` | — |
+| `PATCH` | `/api/v1/tillith/life/{persona_id}/entries/{entry_id}` | — |
+| `DELETE` | `/api/v1/tillith/life/{persona_id}/entries/{entry_id}` | — |
 | `GET` | `/api/v1/tillith/memories` | — |
 | `POST` | `/api/v1/tillith/memories` | — |
 | `PATCH` | `/api/v1/tillith/memories/{memory_id}` | — |
@@ -192,6 +198,9 @@ outline: deep
 | `PATCH` | `/api/v1/tillith/persona-settings/{persona_id}` | — |
 | `GET` | `/api/v1/tillith/personas/{persona_id}/sessions` | — |
 | `GET` | `/api/v1/tillith/profile` | — |
+| `GET` | `/api/v1/tillith/schedules` | — |
+| `POST` | `/api/v1/tillith/schedules` | — |
+| `DELETE` | `/api/v1/tillith/schedules/{job_id}` | — |
 | `GET` | `/api/v1/tillith/search` | — |
 | `GET` | `/api/v1/tillith/session-meta` | — |
 | `PATCH` | `/api/v1/tillith/session-meta` | — |

@@ -25,6 +25,7 @@ from .message_parts_helper import (
     parse_webchat_message_parts,
 )
 from .request_flags import resolve_webchat_request_flags
+from .tillith_push import notify_offline
 from .webchat_event import WebChatMessageEvent
 from .webchat_queue_mgr import WebChatQueueMgr, webchat_queue_mgr
 
@@ -101,12 +102,15 @@ class WebChatAdapter(Platform):
             # No active streams to consume this proactive message.
             # Persist directly and return to avoid creating an unused queue.
             try:
-                await self._save_proactive_message(conversation_id, message_chain)
-            except Exception as e:
-                logger.error(
-                    f"[WebChatAdapter] Failed to save proactive message: {e}",
-                    exc_info=True,
-                )
+                saved = await self._save_proactive_message(conversation_id, message_chain)
+            except Exception:
+                saved = False
+                logger.error("[WebChatAdapter] Failed to save proactive message")
+            if saved:
+                try:
+                    await notify_offline(db_helper, conversation_id)
+                except Exception:
+                    logger.warning("Tillith offline notification delivery failed")
             await super().send_by_session(session, message_chain)
             return
 
@@ -137,14 +141,14 @@ class WebChatAdapter(Platform):
         self,
         conversation_id: str,
         message_chain: MessageChain,
-    ) -> None:
+    ) -> bool:
         message_parts = await message_chain_to_storage_message_parts(
             message_chain,
             insert_attachment=db_helper.insert_attachment,
             attachments_dir=self.attachments_dir,
         )
         if not message_parts:
-            return
+            return False
 
         await db_helper.insert_platform_message_history(
             platform_id="webchat",
@@ -153,6 +157,7 @@ class WebChatAdapter(Platform):
             sender_id="bot",
             sender_name="bot",
         )
+        return True
 
     async def _get_message_history(
         self, message_id: int

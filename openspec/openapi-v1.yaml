@@ -98,6 +98,485 @@ tags:
   - name: Webhooks
 
 paths:
+  /api/v1/tillith/devices:
+    post:
+      tags:
+      - Tillith
+      summary: Register
+      operationId: register_api_v1_tillith_devices_post
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  data:
+                    type: object
+                    properties:
+                      registered:
+                        type: boolean
+                        const: true
+                    required:
+                    - registered
+                    additionalProperties: false
+                required:
+                - status
+                - data
+                additionalProperties: false
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      x-astrbot-scope: chat
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TillithDeviceEnrollment'
+  /api/v1/tillith/devices/{device_id}:
+    delete:
+      tags:
+      - Tillith
+      summary: Revoke
+      operationId: revoke_api_v1_tillith_devices__device_id__delete
+      parameters:
+      - name: device_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Device Id
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  data:
+                    type: object
+                    additionalProperties: false
+                required:
+                - status
+                - data
+                additionalProperties: false
+        '422':
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      x-astrbot-scope: chat
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+  /api/v1/tillith/schedules:
+    get:
+      tags:
+      - Tillith
+      summary: List Schedules
+      operationId: list_schedules_api_v1_tillith_schedules_get
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TillithScheduleView'
+                    required:
+                    - items
+                    additionalProperties: false
+                required:
+                - status
+                - data
+                additionalProperties: false
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '422':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      x-astrbot-scope: chat
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+    post:
+      tags:
+      - Tillith
+      summary: Add Schedule
+      operationId: add_schedule_api_v1_tillith_schedules_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleInput'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  data:
+                    $ref: '#/components/schemas/TillithScheduleView'
+                required:
+                - status
+                - data
+                additionalProperties: false
+        '422':
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      x-astrbot-scope: chat
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+  /api/v1/tillith/schedules/{job_id}:
+    delete:
+      tags:
+      - Tillith
+      summary: Delete Schedule
+      operationId: delete_schedule_api_v1_tillith_schedules__job_id__delete
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Job Id
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  data:
+                    type: object
+                    additionalProperties: false
+                required:
+                - status
+                - data
+                additionalProperties: false
+        '422':
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+        '503':
+          $ref: '#/components/responses/Error'
+      x-astrbot-scope: chat
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+  /api/v1/tillith/life/{persona_id}/entries:
+    get:
+      tags:
+      - Tillith Life
+      summary: List Entries
+      operationId: list_entries_api_v1_tillith_life__persona_id__entries_get
+      parameters:
+      - name: persona_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Persona Id
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TillithLifeEntry'
+                    required:
+                    - items
+                    additionalProperties: false
+                required:
+                - status
+                - data
+                additionalProperties: false
+        '422':
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      x-astrbot-scope: chat
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+    post:
+      tags:
+      - Tillith Life
+      summary: Create Entry
+      operationId: create_entry_api_v1_tillith_life__persona_id__entries_post
+      parameters:
+      - name: persona_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Persona Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntryWrite'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  data:
+                    $ref: '#/components/schemas/TillithLifeEntry'
+                required:
+                - status
+                - data
+                additionalProperties: false
+        '422':
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      x-astrbot-scope: chat
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+  /api/v1/tillith/life/{persona_id}/entries/{entry_id}:
+    patch:
+      tags:
+      - Tillith Life
+      summary: Update Entry
+      operationId: update_entry_api_v1_tillith_life__persona_id__entries__entry_id__patch
+      parameters:
+      - name: persona_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Persona Id
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Entry Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntryPatch'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  data:
+                    $ref: '#/components/schemas/TillithLifeEntry'
+                required:
+                - status
+                - data
+                additionalProperties: false
+        '422':
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      x-astrbot-scope: chat
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
+    delete:
+      tags:
+      - Tillith Life
+      summary: Delete Entry
+      operationId: delete_entry_api_v1_tillith_life__persona_id__entries__entry_id__delete
+      parameters:
+      - name: persona_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Persona Id
+      - name: entry_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Entry Id
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: ok
+                  message:
+                    type:
+                    - string
+                    - 'null'
+                  data:
+                    type: object
+                    additionalProperties: false
+                required:
+                - status
+                - data
+                additionalProperties: false
+        '422':
+          $ref: '#/components/responses/Error'
+        '400':
+          $ref: '#/components/responses/Error'
+        '401':
+          $ref: '#/components/responses/Error'
+        '403':
+          $ref: '#/components/responses/Error'
+        '404':
+          $ref: '#/components/responses/Error'
+      x-astrbot-scope: chat
+      security:
+      - ApiKeyAuth: []
+      - BearerAuth: []
   /api/v1/tillith/tools:
     get:
       tags:
@@ -7549,6 +8028,240 @@ components:
         type: string
 
   schemas:
+    EntryPatch:
+      properties:
+        text:
+          title: Text
+          type: string
+          maxLength: 8000
+          minLength: 1
+        day:
+          title: Day
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+        ai_visible:
+          title: Ai Visible
+          type: boolean
+      additionalProperties: false
+      type: object
+      title: EntryPatch
+      description: Supply at least one non-null field. Only visibility can be edited for AI-authored entries.
+        Shared diaries cannot be marked private on the server.
+      minProperties: 1
+    EntryWrite:
+      properties:
+        category:
+          type: string
+          enum:
+          - board
+          - diary
+          - expense
+          - diet
+          - cycle
+          - daily
+          - memo
+          - anniversary
+          title: Category
+        text:
+          type: string
+          maxLength: 8000
+          minLength: 1
+          title: Text
+        day:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+          title: Day
+        ai_visible:
+          type: boolean
+          title: Ai Visible
+          default: false
+        parent_id:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Parent Id
+      additionalProperties: false
+      type: object
+      required:
+      - category
+      - text
+      - day
+      title: EntryWrite
+      description: Create an owned entry. Shared diary entries must set ai_visible to true. Replies may only
+        target a root board post for the same owner and persona. Private diaries stay on the device.
+    ScheduleInput:
+      properties:
+        session_id:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Session Id
+        kind:
+          type: string
+          enum:
+          - message
+          - wake
+          title: Kind
+        note:
+          type: string
+          maxLength: 2000
+          minLength: 1
+          title: Note
+        at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: At
+        daily:
+          anyOf:
+          - type: string
+            pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+          - type: 'null'
+          title: Daily
+        timezone:
+          type: string
+          maxLength: 96
+          minLength: 1
+          title: Timezone
+          default: UTC
+      additionalProperties: false
+      type: object
+      required:
+      - session_id
+      - kind
+      - note
+      title: ScheduleInput
+      description: Exactly one of at (a future date with a UTC offset) and daily (local time in the IANA timezone)
+        must be supplied.
+    TillithDeviceEnrollment:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        token:
+          type: string
+          minLength: 16
+          maxLength: 4096
+          pattern: ^[!-~]+$
+          writeOnly: true
+        owner:
+          type: string
+      required:
+      - device_id
+      - token
+      - owner
+      additionalProperties: false
+    TillithScheduleView:
+      type: object
+      properties:
+        id:
+          type: string
+        session_id:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Session Id
+        note:
+          type: string
+          maxLength: 2000
+          minLength: 1
+          title: Note
+        kind:
+          type: string
+          enum:
+          - message
+          - wake
+          title: Kind
+        at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: At
+        daily:
+          anyOf:
+          - type: string
+            pattern: ^([01][0-9]|2[0-3]):[0-5][0-9]$
+          - type: 'null'
+          title: Daily
+        timezone:
+          type: string
+          maxLength: 96
+          minLength: 1
+          title: Timezone
+          default: UTC
+        enabled:
+          type: boolean
+      required:
+      - id
+      - session_id
+      - note
+      - kind
+      - at
+      - daily
+      - timezone
+      - enabled
+      additionalProperties: false
+    TillithLifeEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          type: string
+          enum:
+          - board
+          - diary
+          - expense
+          - diet
+          - cycle
+          - daily
+          - memo
+          - anniversary
+          title: Category
+        text:
+          type: string
+          maxLength: 8000
+          minLength: 1
+          title: Text
+        day:
+          type: string
+          pattern: ^\d{4}-\d{2}-\d{2}$
+          title: Day
+        ai_visible:
+          type: boolean
+          title: Ai Visible
+          default: false
+        parent_id:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Parent Id
+        author:
+          type: string
+          enum:
+          - user
+          - ai
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - category
+      - text
+      - day
+      - ai_visible
+      - parent_id
+      - author
+      - created_at
+      additionalProperties: false
     TillithMcpServerList:
       properties:
         persona_tool_bindings:

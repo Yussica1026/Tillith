@@ -69,20 +69,23 @@ public class TillithVaultPlugin extends Plugin {
         } catch (Exception error) { call.reject("Unable to save the encrypted connection key"); }
     }
 
+    static String readSlot(Context context, String slot) throws Exception {
+        String storageKey = slot.equals("cloud") ? "cloud" : "slot:" + slot;
+        String value = context.getSharedPreferences("tillith-vault", Context.MODE_PRIVATE).getString(storageKey, "");
+        if (value.isEmpty()) return "";
+        String[] parts = value.split(":", 2);
+        Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+        cipher.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)));
+        String aad = slot.equals("cloud") ? "TillithCloudKey-v1" : "TillithVault-v2:" + slot;
+        cipher.updateAAD(aad.getBytes(StandardCharsets.UTF_8));
+        return new String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), StandardCharsets.UTF_8);
+    }
+
     @PluginMethod
     public void read(PluginCall call) {
         try {
-            String slot = slot(call);
-            String storageKey = slot.equals("cloud") ? "cloud" : "slot:" + slot;
-            String value = getContext().getSharedPreferences("tillith-vault", Context.MODE_PRIVATE).getString(storageKey, "");
             JSObject result = new JSObject();
-            if (value.isEmpty()) { result.put("value", ""); call.resolve(result); return; }
-            String[] parts = value.split(":", 2);
-            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-            cipher.init(Cipher.DECRYPT_MODE, key(), new GCMParameterSpec(128, Base64.decode(parts[0], Base64.NO_WRAP)));
-            String aad = slot.equals("cloud") ? "TillithCloudKey-v1" : "TillithVault-v2:" + slot;
-            cipher.updateAAD(aad.getBytes(StandardCharsets.UTF_8));
-            result.put("value", new String(cipher.doFinal(Base64.decode(parts[1], Base64.NO_WRAP)), StandardCharsets.UTF_8));
+            result.put("value", readSlot(getContext(), slot(call)));
             call.resolve(result);
         } catch (Exception error) { call.reject("Unable to unlock the saved connection key"); }
     }

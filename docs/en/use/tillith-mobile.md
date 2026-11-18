@@ -91,6 +91,14 @@ Export selected remote services to `Tillith-MCP.json`. Headers and private URL p
 
 Per-call approval, invocation audit, persona binding, and favorites remain outside this increment; it does not complete all of S4. No new APK has been built. Use this branch's frontend together with its Tillith backend.
 
+## Schedules, life entries, and device notifications
+
+Under **More → Scheduled messages**, select an owned chat and choose a one-time or daily delivery. Daily schedules keep their original time zone. Sending the exact note uses no model. A wake asks the model to compose a message and may incur model usage. A changed persona binding prevents delivery to the new persona.
+
+Under **More → Life**, each persona has a message board, replies, journals, and six categories of personal records. A new journal entry stays encrypted on this device by default. Explicit sharing saves that entry to the current server. To let a persona read or reply, select the life tools for that persona and grant access to the relevant entries.
+
+Android push requires configuration for the same Firebase project on both ends. Supply an untracked `mobile/android/app/google-services.json` for the Android client and point `TILLITH_FCM_SERVICE_ACCOUNT_FILE` at the server's service account file. Enroll or revoke the phone under **Settings → Lock-screen notifications** after connecting to the cloud core. A notification opens the matching conversation and contains no message body. Background delivery on Huawei requires on-device verification.
+
 ## Android build status
 
 The base mobile core uses `mobile/native-python/mobile-requirements.txt` for chat, personas, SQLite, built-in plugins, APIs, and attachments. The complete upstream server requirements remain in `requirements.txt`. External messaging platforms, Docker, FAISS indexing, and additional document converters require their own dependencies; installing a plugin does not establish Android compatibility. A fresh environment with this profile has passed real startup, message and attachment roundtrips, and database persistence after shutdown.
