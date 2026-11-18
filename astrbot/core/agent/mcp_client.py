@@ -795,7 +795,13 @@ class MCPTool(FunctionTool, Generic[TContext]):
     """A function tool that calls an MCP service."""
 
     def __init__(
-        self, mcp_tool: mcp.Tool, mcp_client: MCPClient, mcp_server_name: str, **kwargs
+        self,
+        mcp_tool: mcp.Tool,
+        mcp_client: MCPClient,
+        mcp_server_name: str,
+        *,
+        remote_http: bool = False,
+        **kwargs,
     ) -> None:
         # LLM providers restrict tool names to [a-zA-Z0-9_-], but MCP servers
         # may expose names containing e.g. '.'. Expose a sanitized name to the
@@ -810,6 +816,7 @@ class MCPTool(FunctionTool, Generic[TContext]):
         self.mcp_tool = mcp_tool
         self.mcp_client = mcp_client
         self.mcp_server_name = mcp_server_name
+        self.remote_http = remote_http
 
     async def call(
         self, context: ContextWrapper[TContext], **kwargs

@@ -10431,6 +10431,11 @@
     "schemas": {
       "TillithMcpServerList": {
         "properties": {
+          "persona_tool_bindings": {
+            "type": "boolean",
+            "const": true,
+            "title": "Persona Tool Bindings"
+          },
           "servers": {
             "items": {
               "$ref": "#/components/schemas/TillithMcpServerView"
@@ -10441,6 +10446,7 @@
         },
         "type": "object",
         "required": [
+          "persona_tool_bindings",
           "servers"
         ],
         "title": "TillithMcpServerList"

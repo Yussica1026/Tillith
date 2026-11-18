@@ -764,6 +764,7 @@ export type TillithContextSuccessEnvelope = {
 };
 
 export type TillithMcpServerList = {
+    persona_tool_bindings: true;
     servers: Array<TillithMcpServerView>;
 };
 

@@ -306,17 +306,17 @@ class FunctionToolExecutor(BaseFunctionToolExecutor[AstrAgentContext]):
         if not tools:
             return None
 
+        selected_names = {name for name in tools if isinstance(name, str)}
         toolset = ToolSet()
+        for registered_tool in tool_mgr.get_full_tool_set(selected_names):
+            if registered_tool.active:
+                toolset.add_tool(registered_tool)
         for tool_name_or_obj in tools:
             if isinstance(tool_name_or_obj, str):
-                registered_tool = llm_tools.get_func(tool_name_or_obj)
-                if registered_tool and registered_tool.active:
-                    toolset.add_tool(registered_tool)
-                    continue
                 runtime_tool = runtime_computer_tools.get(tool_name_or_obj)
-                if runtime_tool:
+                if runtime_tool and not toolset.get_tool(tool_name_or_obj):
                     toolset.add_tool(runtime_tool)
-            elif isinstance(tool_name_or_obj, FunctionTool):
+            elif isinstance(tool_name_or_obj, FunctionTool) and tool_name_or_obj.active:
                 toolset.add_tool(tool_name_or_obj)
         return None if toolset.empty() else toolset
 
@@ -349,10 +349,14 @@ class FunctionToolExecutor(BaseFunctionToolExecutor[AstrAgentContext]):
         tool_args["image_urls"] = image_urls
 
         # Build handoff toolset from registered tools plus runtime computer tools.
-        toolset = cls._build_handoff_toolset(run_context, tool.agent.tools)
-
         ctx = run_context.context.context
         event = run_context.context.event
+        selections = tool.agent.tools
+        persona_id = getattr(tool, "persona_id", None)
+        if persona_id:
+            persona = ctx.persona_manager.get_persona_v3_by_id(persona_id)
+            selections = persona.get("tools") if persona is not None else []
+        toolset = cls._build_handoff_toolset(run_context, selections)
         umo = event.unified_msg_origin
 
         # Use per-subagent provider override if configured; otherwise fall back
@@ -392,6 +396,11 @@ class FunctionToolExecutor(BaseFunctionToolExecutor[AstrAgentContext]):
             image_urls=image_urls,
             system_prompt=tool.agent.instructions,
             tools=toolset,
+            agent_context=AstrAgentContext(
+                context=ctx, event=event, extra={"tool_persona_id": persona_id}
+            )
+            if persona_id
+            else None,
             contexts=contexts,
             max_steps=agent_max_step,
             tool_call_timeout=run_context.tool_call_timeout,

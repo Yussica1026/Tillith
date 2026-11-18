@@ -307,6 +307,20 @@ class InternalAgentSubStage(Stage):
                     if await call_event_hook(event, EventType.OnLLMRequestEvent, req):
                         return
 
+                    if req.func_tool:
+                        selections = None
+                        if pid := event.get_extra("_tool_persona_id"):
+                            persona = (
+                                plugin_context.persona_manager.get_persona_v3_by_id(pid)
+                            )
+                            selections = (
+                                persona.get("tools") if persona is not None else []
+                            )
+                        plugin_context.get_llm_tool_manager().restrict_request_tools(
+                            req.func_tool,
+                            set(selections) if selections is not None else None,
+                        )
+
                     options = build_cfg.provider_settings.get(
                         "image_compress_options", {}
                     )

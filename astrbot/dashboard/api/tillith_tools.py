@@ -62,6 +62,7 @@ class TillithMcpServerView(BaseModel):
 
 
 class TillithMcpServerList(BaseModel):
+    persona_tool_bindings: Literal[True]
     servers: list[TillithMcpServerView]
 
 
@@ -101,7 +102,7 @@ async def set_tool_enabled(
     "/tillith/mcp/servers", response_model=TillithToolsResponse[TillithMcpServerList]
 )
 async def list_servers(service: TillithToolsService = Depends(get_service)):
-    return ok({"servers": service.servers()})
+    return ok({"servers": service.servers(), "persona_tool_bindings": True})
 
 
 @router.post(

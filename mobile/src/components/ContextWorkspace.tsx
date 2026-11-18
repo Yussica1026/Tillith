@@ -14,7 +14,7 @@ export function ContextWorkspace({ onBack, onSettings, storageId, backLabel = '�
   return <main className="settings-page context-workspace">
     <div className="page-heading"><div><button type="button" className="text-button" onClick={onBack}><Icon name="back" size={16} />{backLabel}</button><span className="eyebrow">让每次对话有来处</span><h1>人格与上下文</h1></div></div>
     <nav className="context-tabs" aria-label="上下文工作区">{([['personas', '人格'], ['worldbooks', '世界书'], ['memories', '记忆']] as const).map(([id, label]) => <button type="button" key={id} aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>{label}</button>)}</nav>
-    {tab === 'personas' && <PersonaPanel storageId={storageId} onSettings={onSettings} onOpenPersona={onOpenPersona} />}
+    {tab === 'personas' && <PersonaPanel key={storageId} storageId={storageId} onSettings={onSettings} onOpenPersona={onOpenPersona} />}
     {tab === 'worldbooks' && <WorldbookPanel />}
     {tab === 'memories' && <MemoryPanel />}
     {sessionId && <section className="context-source-entry"><button type="button" className="text-button" aria-expanded={showSources} onClick={() => setShowSources(!showSources)}>查看当前会话的注入来源</button>{showSources && <ContextSources sessionId={sessionId} />}</section>}

@@ -27,6 +27,9 @@
 .context-notice { padding: 13px 15px; margin: 16px 0; border-radius: 11px; border: 1px solid var(--line); background: var(--blue-wash); font-size: 12px; line-height: 1.8; overflow-wrap: anywhere; }
 .context-fieldset { border: 1px solid var(--line); border-radius: 12px; padding: 14px; min-width: 0; margin: 20px 0 12px; }
 .context-fieldset legend { font-size: 13px; color: var(--accent); padding: 0 6px; }
+.persona-binding-options { min-width: 0; margin: 14px 0 0; padding: 3px 0 0; border: 0; border-top: 1px solid var(--line); }
+.persona-binding-options .toggle-field { margin: 0; overflow-wrap: anywhere; }
+.persona-binding-options input { flex-shrink: 0; }
 .context-opening { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 5px; }
 .context-entry-selector, .context-search { display: flex; align-items: end; gap: 12px; }
 .context-entry-selector .dialog-field, .context-search .dialog-field { flex: 1; min-width: 0; }

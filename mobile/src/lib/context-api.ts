@@ -3,7 +3,7 @@ import { chatRequest, managementRequest } from './api';
 
 export type PersonaOption = { id: string; name: string; folder_id: string | null; sort_order: number; default_config_id?: string | null; default_provider_id?: string | null };
 export type PersonaSettings = { persona_id: string; display_name: string; default_config_id: string | null; default_provider_id: string | null };
-export type Persona = { persona_id: string; system_prompt: string; begin_dialogs: { role: 'user' | 'assistant'; content: string }[]; folder_id: string | null; sort_order: number };
+export type Persona = { persona_id: string; system_prompt: string; begin_dialogs: { role: 'user' | 'assistant'; content: string }[]; tools?: string[] | null; folder_id: string | null; sort_order: number };
 export type PersonaFolder = { folder_id: string; name: string; parent_id: string | null; description?: string; sort_order: number; children?: PersonaFolder[] };
 export type WorldbookEntry = { id?: string; title: string; text: string; enabled: boolean; always_active: boolean; keywords: string[]; regex: boolean; case_sensitive: boolean; scan_depth: number; position: 'before_system' | 'after_system' | 'before_history' | 'after_history'; role: 'system' | 'user' | 'assistant'; priority: number };
 export type WorldbookWrite = { name: string; description: string; enabled: boolean; entries: WorldbookEntry[] };
@@ -18,7 +18,7 @@ export function getPersonaSettings(id: string): Promise<PersonaSettings> { retur
 export function savePersonaSettings(id: string, value: string | Partial<Omit<PersonaSettings, 'persona_id'>>): Promise<PersonaSettings> { return chatRequest('/tillith/persona-settings/' + encodeURIComponent(id), { method: 'PATCH', body: JSON.stringify(typeof value === 'string' ? { display_name: value } : value) }); }
 export function listPersonas(): Promise<Persona[]> { return managementRequest('/personas'); }
 export function listPersonaFolders(): Promise<PersonaFolder[]> { return managementRequest('/personas/tree'); }
-export async function savePersona(value: Pick<Persona, 'persona_id' | 'system_prompt' | 'begin_dialogs'> & { folder_id?: string | null }, existing = false): Promise<void> {
+export async function savePersona(value: Pick<Persona, 'persona_id' | 'system_prompt' | 'begin_dialogs' | 'tools'> & { folder_id?: string | null }, existing = false): Promise<void> {
   await managementRequest(existing ? '/personas/by-id' : '/personas', { method: existing ? 'PUT' : 'POST', body: JSON.stringify(value) });
 }
 export async function deletePersona(id: string): Promise<void> { await managementRequest('/personas/by-id?persona_id=' + encodeURIComponent(id), { method: 'DELETE' }); }

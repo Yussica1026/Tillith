@@ -572,6 +572,7 @@ async def _ensure_persona_and_skills(
 ) -> None:
     """Ensure persona and skills are applied to the request's system prompt or user prompt."""
     event.set_extra("_trace_persona_id", None)
+    event.set_extra("_tool_persona_id", None)
     if req.system_prompt is None:
         req.system_prompt = ""
 
@@ -594,6 +595,7 @@ async def _ensure_persona_and_skills(
     )
 
     event.set_extra("_trace_persona_id", persona_id)
+    event.set_extra("_tool_persona_id", persona_id if persona is not None else None)
 
     set_persona_custom_error_message_on_event(
         event, extract_persona_custom_error_message_from_persona(persona)
@@ -651,22 +653,16 @@ async def _ensure_persona_and_skills(
                 )
     tmgr = plugin_context.get_llm_tool_manager()
 
-    # inject toolset in the persona
-    if (persona and persona.get("tools") is None) or not persona:
-        persona_toolset = tmgr.get_full_tool_set()
-        for tool in list(persona_toolset):
-            if not tool.active:
-                persona_toolset.remove_tool(tool.name)
-    else:
-        persona_toolset = ToolSet()
-        if persona["tools"]:
-            for tool_name in persona["tools"]:
-                tool = tmgr.get_func(tool_name)
-                if tool and tool.active:
-                    persona_toolset.add_tool(tool)
-    if not req.func_tool:
+    selections = persona.get("tools") if persona else None
+    selected = set(selections) if selections is not None else None
+    persona_toolset = tmgr.get_full_tool_set(selected)
+    for tool in list(persona_toolset):
+        if not tool.active:
+            persona_toolset.remove_tool(tool.name)
+    if req.func_tool is None:
         req.func_tool = persona_toolset
     else:
+        tmgr.restrict_request_tools(req.func_tool, selected)
         req.func_tool.merge(persona_toolset)
 
     # sub agents integration
@@ -690,7 +686,7 @@ async def _ensure_persona_and_skills(
                     if persona is not None:
                         persona_tools = persona.get("tools")
                 tools = a.get("tools", [])
-                if persona_tools is not None:
+                if pid and persona is not None:
                     tools = persona_tools
                 if tools is None:
                     assigned_tools.update(
@@ -703,10 +699,11 @@ async def _ensure_persona_and_skills(
                     continue
                 if not isinstance(tools, list):
                     continue
-                for t in tools:
-                    name = str(t).strip()
-                    if name:
-                        assigned_tools.add(name)
+                assigned_tools.update(
+                    tool.name
+                    for tool in tmgr.get_full_tool_set(set(tools))
+                    if tool.active
+                )
 
         if req.func_tool is None:
             req.func_tool = ToolSet()
@@ -1892,6 +1889,8 @@ async def build_main_agent(
         context=plugin_context,
         event=event,
     )
+    if persona_id := event.get_extra("_tool_persona_id"):
+        astr_agent_ctx.extra["tool_persona_id"] = persona_id
     if config.computer_use_runtime == "local":
         local_policy = get_local_permission_policy(
             AgentContextWrapper(context=astr_agent_ctx)

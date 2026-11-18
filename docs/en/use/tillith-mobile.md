@@ -77,6 +77,8 @@ Real-core browser checks with a loopback synthetic model cover persona defaults,
 
 ## Tools and remote MCP
 
+In **More → Personas, worldbooks and memory**, open a persona and edit its tool selection. Inherit the core defaults, or select individual tools and remote MCP servers. Selecting a whole server includes its newly discovered tools. A single MCP tool stays bound to its original server. An empty custom selection disables optional tools for that persona. Core-wide permissions still apply.
+
 After connecting, open **More → Tools and MCP**. The separate management key needs the `mcp` scope; the workspace links back to connection settings when credentials need attention. These controls manage the current core, so changes also affect other conversations using that core.
 
 Search tools by name, description, or source, inspect their availability, and enable or disable editable tools. The MCP workspace supports adding, editing, checking, enabling, disabling, and deleting remote HTTP services. A connection check displays discovered tools; enabled services also expose tools in the tool list. Saving configuration does not guarantee continued remote availability.

@@ -250,6 +250,25 @@ class _PermissionGuardedTool(FunctionTool):
         if error is not None:
             return error
 
+        if not self._wrapped.active or not any(
+            candidate is self._wrapped for candidate in self._mgr.func_list
+        ):
+            return "error: Tool is no longer available."
+        if isinstance(self._wrapped, MCPTool):
+            runtime = self._mgr.mcp_server_runtime_view.get(
+                self._wrapped.mcp_server_name
+            )
+            if runtime is None or runtime.shutdown_event.is_set():
+                return "error: MCP server is no longer available."
+        extra = getattr(context.context, "extra", {})
+        if isinstance(extra, dict) and (pid := extra.get("tool_persona_id")):
+            persona = context.context.context.persona_manager.get_persona_v3_by_id(pid)
+            selections = persona.get("tools") if persona is not None else []
+            if selections is not None and not self._mgr.matches_persona_tool(
+                self._wrapped, set(selections)
+            ):
+                return "error: Tool is no longer selected for this persona."
+
         # @filter.llm_tool decorated tools have a handler attribute, which is the actual callable.
         if self._wrapped.handler is not None:
             event = context.context.event
@@ -493,7 +512,29 @@ class FunctionToolManager:
             )
         return None
 
-    def get_full_tool_set(self) -> ToolSet:
+    @staticmethod
+    def matches_persona_tool(tool: FunctionTool, selections: set[str]) -> bool:
+        """Match a registered tool before name collisions are resolved.
+
+        Args:
+            tool: Registered tool with its original owner.
+            selections: Persisted persona tool names and remote server selectors.
+
+        Returns:
+            Whether a selector grants this specific tool.
+        """
+        if tool.name in selections:
+            return True
+        if not isinstance(tool, MCPTool) or not tool.remote_http:
+            return False
+        server = tool.mcp_server_name
+        if f"mcp:{server}" in selections:
+            return True
+        # Match JavaScript encodeURIComponent, including server names with slashes.
+        encoded = urllib.parse.quote(server, safe="~()*!.'-_")
+        return f"mcp-tool:{encoded}/{tool.name}" in selections
+
+    def get_full_tool_set(self, selections: set[str] | None = None) -> ToolSet:
         """获取完整工具集
 
         使用 ToolSet.add_tool 进行填充。对于同名工具，去重规则为：
@@ -509,8 +550,38 @@ class FunctionToolManager:
         """
         tool_set = ToolSet()
         for tool in self.func_list:
+            if selections is not None and not self.matches_persona_tool(
+                tool, selections
+            ):
+                continue
             tool_set.add_tool(_PermissionGuardedTool(tool, self))
         return tool_set
+
+    def restrict_request_tools(
+        self, tools: ToolSet, selections: set[str] | None
+    ) -> None:
+        """Apply the persona and current registry to tools supplied by request hooks.
+
+        Args:
+            tools: The request-local tool set to filter in place.
+            selections: The selected persona tools, or None for inherited tools.
+        """
+        available = self.get_full_tool_set(selections)
+        registered_names = {tool.name for tool in self.func_list}
+        for requested in list(tools):
+            if requested.name not in registered_names and not isinstance(
+                requested, (_PermissionGuardedTool, MCPTool)
+            ):
+                continue
+            candidate = available.get_tool(requested.name)
+            original = (
+                requested._wrapped
+                if isinstance(requested, _PermissionGuardedTool)
+                else requested
+            )
+            tools.remove_tool(requested.name)
+            if candidate and candidate.active and candidate._wrapped is original:
+                tools.add_tool(candidate)
 
     @staticmethod
     def _log_safe_mcp_debug_config(cfg: dict) -> None:
@@ -679,6 +750,7 @@ class FunctionToolManager:
             try:
                 await mcp_client.connect_to_server(cfg, name)
                 await mcp_client.list_tools_and_save()
+                inactive_tools = await sp.global_get("inactivated_llm_tools", [])
             except asyncio.CancelledError:
                 # cleanup on cancellation
                 try:
@@ -706,7 +778,16 @@ class FunctionToolManager:
                     mcp_tool=tool,
                     mcp_client=mcp_client,
                     mcp_server_name=name,
+                    remote_http=(
+                        cfg.get("transport", cfg.get("type", "sse"))
+                        in {"streamable_http", "sse"}
+                        and str(cfg.get("url", ""))
+                        .lower()
+                        .startswith(("https://", "http://"))
+                        and not any(key in cfg for key in ("command", "args", "env"))
+                    ),
                 )
+                func_tool.active = func_tool.name not in inactive_tools
                 self.func_list.append(func_tool)
 
             logger.info(

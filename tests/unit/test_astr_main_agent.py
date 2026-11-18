@@ -27,6 +27,7 @@ from astrbot.core.platform.platform_metadata import PlatformMetadata
 from astrbot.core.provider import Provider
 from astrbot.core.provider import manager as provider_manager_module
 from astrbot.core.provider.entities import LLMResponse, ProviderRequest, ProviderType
+from astrbot.core.provider.func_tool_manager import FunctionToolManager
 from astrbot.core.provider.manager import ProviderManager
 from astrbot.core.skills.skill_manager import SkillInfo
 from astrbot.core.star.context import Context
@@ -71,6 +72,7 @@ def mock_context():
     )
     ctx.persona_manager.get_persona_v3_by_id = MagicMock(return_value=None)
     tool_mgr = MagicMock()
+    tool_mgr.get_full_tool_set.side_effect = lambda selected=None: ToolSet()
     tool_mgr.get_builtin_tool.side_effect = lambda cls, **kwargs: cls(**kwargs)
     ctx.get_llm_tool_manager.return_value = tool_mgr
     ctx.subagent_orchestrator = None
@@ -1556,23 +1558,87 @@ class TestEnsurePersonaAndSkills:
     async def test_ensure_tools_from_persona(self, mock_event, mock_context):
         """Test applying tools from persona."""
         module = ama
-        mock_tool = MagicMock()
-        mock_tool.name = "test_tool"
-        mock_tool.active = True
+        mock_tool = FunctionTool(name="test_tool", description="", parameters={})
         persona = {"name": "persona", "prompt": "Test", "tools": ["test_tool"]}
         mock_context.persona_manager.personas_v3 = [persona]
         mock_context.persona_manager.resolve_selected_persona = AsyncMock(
             return_value=("persona", persona, None, False)
         )
         tmgr = mock_context.get_llm_tool_manager.return_value
-        tmgr.get_func.return_value = mock_tool
+        tmgr.get_full_tool_set.side_effect = lambda selections: ToolSet([mock_tool])
 
         req = ProviderRequest()
         req.conversation = MagicMock(persona_id="persona")
 
         await module._ensure_persona_and_skills(req, {}, mock_context, mock_event)
 
-        assert req.func_tool is not None
+        assert req.func_tool.names() == ["test_tool"]
+
+    @pytest.mark.asyncio
+    async def test_remote_persona_selection_enforced_at_dispatch(
+        self, mock_event, mock_context
+    ):
+        import mcp
+
+        mgr = FunctionToolManager()
+        server = "team/one"
+        client = MagicMock()
+        client.call_tool_with_reconnect = AsyncMock(return_value="allowed")
+        tool = mcp.Tool(name="hello.world", inputSchema={})
+        allowed = MCPTool(tool, client, server, remote_http=True)
+        other = MCPTool(tool, MagicMock(), "other", remote_http=True)
+        local = MCPTool(tool, MagicMock(), server, remote_http=False)
+        inactive = FunctionTool(
+            name="disabled", description="", parameters={}, active=False
+        )
+        mgr.func_list = [allowed, other, local, inactive]
+        mgr._mcp_server_runtime[server] = SimpleNamespace(
+            shutdown_event=asyncio.Event()
+        )
+        mgr._check_tool_permission = AsyncMock(return_value=None)
+        mock_context.get_llm_tool_manager.return_value = mgr
+        persona = {
+            "name": "reader",
+            "prompt": "",
+            "tools": ["mcp:team/one", "disabled"],
+        }
+        mock_context.persona_manager.resolve_selected_persona = AsyncMock(
+            return_value=("reader", persona, None, False)
+        )
+        mock_context.persona_manager.get_persona_v3_by_id.return_value = persona
+        req = ProviderRequest(func_tool=ToolSet([other, inactive]))
+        req.conversation = MagicMock(persona_id="reader")
+        await ama._ensure_persona_and_skills(req, {}, mock_context, mock_event)
+        assert req.func_tool.names() == ["hello_world"]
+        guarded = req.func_tool.get_tool("hello_world")
+        context = SimpleNamespace(
+            context=SimpleNamespace(
+                context=mock_context, extra={"tool_persona_id": "reader"}
+            ),
+            tool_call_timeout=10,
+        )
+        assert await guarded.call(context) == "allowed"
+        client.call_tool_with_reconnect.assert_awaited_once()
+        for selectors in [{"mcp-tool:team%2Fone/hello_world"}, {"mcp:team/one"}]:
+            injected = ToolSet([other])
+            mgr.restrict_request_tools(injected, selectors)
+            assert injected.empty()
+            assert (
+                mgr.get_full_tool_set(selectors).get_tool("hello_world")._wrapped
+                is allowed
+            )
+        persona["tools"] = []
+        assert "no longer selected" in await guarded.call(context)
+        req.func_tool = ToolSet([allowed])
+        await ama._ensure_persona_and_skills(req, {}, mock_context, mock_event)
+        assert req.func_tool.empty()
+        persona["tools"] = None
+        allowed.active = False
+        assert "no longer available" in await guarded.call(context)
+        allowed.active = True
+        mgr._mcp_server_runtime[server].shutdown_event.set()
+        assert "no longer available" in await guarded.call(context)
+        client.call_tool_with_reconnect.assert_awaited_once()
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -1754,13 +1820,9 @@ class TestEnsurePersonaAndSkills:
             parameters={"type": "object", "properties": {}},
             description="tool b",
         )
-        tmgr = mock_context.get_llm_tool_manager.return_value
+        tmgr = FunctionToolManager()
         tmgr.func_list = [tool_a, tool_b]
-        tmgr.get_full_tool_set.return_value = ToolSet([tool_a, tool_b])
-        tmgr.get_func.side_effect = lambda name: {
-            "tool_a": tool_a,
-            "tool_b": tool_b,
-        }.get(name)
+        mock_context.get_llm_tool_manager.return_value = tmgr
 
         handoff = MagicMock()
         handoff.name = "transfer_to_planner"

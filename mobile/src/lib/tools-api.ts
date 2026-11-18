@@ -18,11 +18,11 @@ export type McpDraft = {
   headers: Record<string, string>; clear_headers?: boolean; active: boolean;
 };
 
-export async function loadToolsWorkspace(): Promise<{ tools: ToolInfo[]; servers: McpServer[] }> {
+export async function loadToolsWorkspace(): Promise<{ tools: ToolInfo[]; servers: McpServer[]; personaToolBindings: boolean }> {
   const [tools, servers] = await Promise.all([
     managementRequest('/tillith/tools'), managementRequest('/tillith/mcp/servers'),
   ]);
-  return { tools: tools.tools, servers: servers.servers };
+  return { tools: tools.tools, servers: servers.servers, personaToolBindings: servers.persona_tool_bindings === true };
 }
 
 export async function setToolEnabled(name: string, enabled: boolean): Promise<void> {

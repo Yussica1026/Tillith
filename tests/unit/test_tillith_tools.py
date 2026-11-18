@@ -162,6 +162,7 @@ async def test_mcp_scope_and_listing_never_expose_credentials(client):
     response = await browser.get("/tillith/mcp/servers")
     assert response.status_code == 200
     assert "fixture-" not in response.text
+    assert response.json()["data"]["persona_tool_bindings"] is True
     remote, local = response.json()["data"]["servers"]
     assert remote["url"] == "" and remote["url_secret"] and remote["headers_present"]
     assert remote["connected"] and remote["tools"] == ["lookup_weather"]

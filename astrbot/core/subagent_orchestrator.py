@@ -95,6 +95,7 @@ class SubAgentOrchestrator:
 
             # Optional per-subagent chat provider override.
             handoff.provider_id = provider_id
+            handoff.persona_id = persona_id if persona_data is not None else None
 
             handoffs.append(handoff)
 
